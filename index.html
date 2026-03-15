@@ -485,7 +485,7 @@ footer a:hover { text-decoration: underline; }
   <div class="tz-info" id="tzInfo"></div>
 
   <div class="info-card" id="scheduleCard">
-    <h2>This week in your timezone</h2>
+    <h2>Promo windows in your timezone</h2>
     <div id="scheduleRows"></div>
   </div>
 
@@ -651,6 +651,22 @@ footer a:hover { text-decoration: underline; }
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
   }
 
+  // === Format timestamp as "Day HH:MM" in local time ===
+  function formatDateTimeShort(ts) {
+    const d = new Date(ts);
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${days[d.getDay()]} ${h}:${m}`;
+  }
+  function formatDateTimeShortJa(ts) {
+    const d = new Date(ts);
+    const days = ['日', '月', '火', '水', '木', '金', '土'];
+    const h = String(d.getHours()).padStart(2, '0');
+    const m = String(d.getMinutes()).padStart(2, '0');
+    return `${days[d.getDay()]}${h}:${m}`;
+  }
+
   // === Get timezone name ===
   function getTimezoneName() {
     try {
@@ -713,6 +729,48 @@ footer a:hover { text-decoration: underline; }
       }
     }
     return merged;
+  }
+
+  // === Compute continuous promo ranges across multiple days ===
+  function getPromoRanges(baseDate, daysBefore, daysAfter) {
+    const DAY_MS = 86400000;
+    const baseDay = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+    const allSegments = [];
+
+    for (let i = -daysBefore; i <= daysAfter; i++) {
+      const d = new Date(baseDay.getFullYear(), baseDay.getMonth(), baseDay.getDate() + i);
+      const dayTs = d.getTime();
+      const segs = getLocalDaySegments(dayTs);
+      for (const seg of segs) {
+        allSegments.push({
+          type: seg.type,
+          start: dayTs + seg.startMs,
+          end: dayTs + seg.endMs
+        });
+      }
+    }
+
+    // Merge adjacent promo segments
+    const ranges = [];
+    let cur = null;
+    for (const seg of allSegments) {
+      if (seg.type === 'promo') {
+        if (cur && seg.start <= cur.end) {
+          cur.end = Math.max(cur.end, seg.end);
+        } else {
+          if (cur) ranges.push(cur);
+          cur = { start: seg.start, end: seg.end };
+        }
+      } else {
+        if (cur) { ranges.push(cur); cur = null; }
+      }
+    }
+    if (cur) ranges.push(cur);
+
+    // Clamp to promo period
+    return ranges
+      .map(r => ({ start: Math.max(r.start, PROMO_START), end: Math.min(r.end, PROMO_END) }))
+      .filter(r => r.start < r.end);
   }
 
   function buildWeeklyTimeline() {
@@ -832,44 +890,51 @@ footer a:hover { text-decoration: underline; }
     const now = new Date();
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // Show 7 days starting from today
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
-      const localMidnightTs = d.getTime();
+    const ranges = getPromoRanges(now, 2, 15);
+    // Show ranges that haven't ended yet
+    const relevant = ranges.filter(r => r.end > now.getTime()).slice(0, 10);
 
-      // Rough check: is any part of this local day in promo?
-      if (localMidnightTs > PROMO_END + 86400000 || localMidnightTs + 86400000 < PROMO_START) continue;
+    for (const range of relevant) {
+      const startD = new Date(range.start);
+      const endD = new Date(range.end);
 
       const row = document.createElement('div');
       row.className = 'schedule-row';
 
       const dayLabel = document.createElement('span');
       dayLabel.className = 'day';
-      dayLabel.textContent = `${dayNames[d.getDay()]} ${d.getDate()}`;
 
       const timesEl = document.createElement('span');
       timesEl.className = 'times';
 
-      // Use local day segments to determine promo hours for this day
-      const segments = getLocalDaySegments(localMidnightTs);
-      const promoSegs = segments.filter(s => s.type === 'promo');
+      const sameDay = startD.getFullYear() === endD.getFullYear() &&
+                      startD.getMonth() === endD.getMonth() &&
+                      startD.getDate() === endD.getDate();
 
-      if (promoSegs.length === 1 && promoSegs[0].startMs === 0 && promoSegs[0].endMs === 86400000) {
-        // Full day promo
-        const badge = document.createElement('span');
-        badge.className = 'badge badge-allday';
-        badge.textContent = 'ALL DAY';
-        timesEl.appendChild(badge);
+      const startTime = String(startD.getHours()).padStart(2, '0') + ':' + String(startD.getMinutes()).padStart(2, '0');
+      const endTime = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0');
+
+      if (sameDay) {
+        dayLabel.textContent = `${dayNames[startD.getDay()]} ${startD.getDate()}`;
+        if (startTime === '00:00' && endTime === '00:00') {
+          const badge = document.createElement('span');
+          badge.className = 'badge badge-allday';
+          badge.textContent = 'ALL DAY';
+          timesEl.appendChild(badge);
+        } else {
+          const badge = document.createElement('span');
+          badge.className = 'badge badge-promo';
+          badge.textContent = '2x promo';
+          timesEl.appendChild(badge);
+          timesEl.appendChild(document.createTextNode(`  ${startTime}–${endTime}`));
+        }
       } else {
-        // Show promo time ranges as badge + times
+        dayLabel.textContent = `${dayNames[startD.getDay()]} ${startD.getDate()} – ${dayNames[endD.getDay()]} ${endD.getDate()}`;
         const badge = document.createElement('span');
         badge.className = 'badge badge-promo';
         badge.textContent = '2x promo';
         timesEl.appendChild(badge);
-        const promoStr = promoSegs
-          .map(s => `${formatMsAsTime(s.startMs)}–${formatMsAsTime(s.endMs)}`)
-          .join(', ');
-        timesEl.appendChild(document.createTextNode(` ${promoStr}`));
+        timesEl.appendChild(document.createTextNode(`  ${dayNames[startD.getDay()]} ${startTime} – ${dayNames[endD.getDay()]} ${endTime}`));
       }
 
       row.appendChild(dayLabel);
@@ -908,13 +973,14 @@ footer a:hover { text-decoration: underline; }
       case 'WEEKEND_PROMO': {
         answerEl.textContent = 'YES';
         answerEl.className = 'yes';
-        const wkLocalMid = formatLocalTime(0);
-        if (wkLocalMid === '00:00') {
+        const ranges = getPromoRanges(now, 3, 3);
+        const currentRange = ranges.find(r => now.getTime() >= r.start && now.getTime() < r.end);
+        if (currentRange) {
+          subtitleEl.textContent = `Weekend promo! ${formatDateTimeShort(currentRange.start)} – ${formatDateTimeShort(currentRange.end)}`;
+          subtitleJaEl.textContent = `週末プロモ！ ${formatDateTimeShortJa(currentRange.start)}〜${formatDateTimeShortJa(currentRange.end)}`;
+        } else {
           subtitleEl.textContent = 'Weekend — all day promo!';
           subtitleJaEl.textContent = '週末は終日プロモーション！';
-        } else {
-          subtitleEl.textContent = `Weekend promo! Sat ${wkLocalMid} – Mon ${wkLocalMid}`;
-          subtitleJaEl.textContent = `週末プロモ！ 土${wkLocalMid}〜月${wkLocalMid}`;
         }
         break;
       }

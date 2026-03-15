@@ -509,9 +509,9 @@ footer a:hover { text-decoration: underline; }
 (() => {
   // === Promo config (all in UTC) ===
   const PROMO_START = Date.UTC(2026, 2, 13, 0, 0, 0);  // Mar 13 00:00 UTC
-  const PROMO_END   = Date.UTC(2026, 2, 28, 7, 59, 0);  // Mar 27 23:59 PT = Mar 28 07:59 UTC
-  const PEAK_START_UTC = 13; // 8 AM ET
-  const PEAK_END_UTC   = 19; // 2 PM ET
+  const PROMO_END   = Date.UTC(2026, 2, 28, 6, 59, 0);  // Mar 27 23:59 PDT = Mar 28 06:59 UTC
+  const PEAK_START_UTC = 12; // 8 AM EDT (UTC-4)
+  const PEAK_END_UTC   = 18; // 2 PM EDT (UTC-4)
 
   // === Theme ===
   const themeBtn = document.getElementById('themeToggle');
@@ -608,8 +608,16 @@ footer a:hover { text-decoration: underline; }
         return { start, end };
       } else {
         const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
-        const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0);
-        return { start, end };
+        const tomorrow = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
+        const tDay = tomorrow.getUTCDay();
+        let end;
+        if (tDay === 0 || tDay === 6) {
+          const daysToMon = (8 - tDay) % 7 || 7;
+          end = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
+        } else {
+          end = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), PEAK_START_UTC, 0, 0);
+        }
+        return { start, end: Math.min(end, PROMO_END) };
       }
     }
     if (status === 'WEEKEND_PROMO') {
@@ -618,8 +626,10 @@ footer a:hover { text-decoration: underline; }
       const daysSinceSat = dayOfWeek === 0 ? 1 : dayOfWeek - 6;
       const satDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceSat));
       const start = Date.UTC(satDate.getUTCFullYear(), satDate.getUTCMonth(), satDate.getUTCDate(), 0, 0, 0);
-      const end = Date.UTC(satDate.getUTCFullYear(), satDate.getUTCMonth(), satDate.getUTCDate() + 2, 0, 0, 0);
-      return { start, end };
+      // End at Monday peak start (matches countdown target)
+      const daysToMon = (8 - d.getUTCDay()) % 7 || 7;
+      const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
+      return { start, end: Math.min(end, PROMO_END) };
     }
     return null;
   }

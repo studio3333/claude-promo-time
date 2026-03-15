@@ -284,6 +284,50 @@ h1 {
   border-bottom: 5px solid var(--text);
 }
 
+/* Time scale */
+.wt-scale {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  height: 14px;
+  margin-bottom: 2px;
+}
+.wt-scale-gutter {
+  width: 2rem;
+  flex-shrink: 0;
+}
+.wt-scale-track {
+  position: relative;
+  flex: 1;
+  height: 100%;
+}
+.wt-tick {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  opacity: 0.6;
+  line-height: 1;
+  white-space: nowrap;
+}
+.wt-tick:first-child { transform: translateX(0); }
+.wt-tick:last-child { transform: translateX(-100%); }
+.wt-tick::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1px;
+  height: 3px;
+  background: var(--text-dim);
+  opacity: 0.3;
+}
+.wt-tick:first-child::after { left: 0; transform: none; }
+.wt-tick:last-child::after { left: auto; right: 0; transform: none; }
+
 /* Legend */
 .wt-legend {
   display: flex;
@@ -587,29 +631,96 @@ footer a:hover { text-decoration: underline; }
   }
 
   // === Build weekly timeline ===
+  // Compute promo segments for a local day (local 00:00–24:00).
+  // Returns array of { type: 'promo'|'peak'|'weekend', startMs, endMs } relative to local midnight.
+  function getLocalDaySegments(localMidnightTs) {
+    const DAY_MS = 86400000;
+    const raw = [];
+    let cursor = localMidnightTs;
+    const end = localMidnightTs + DAY_MS;
+
+    while (cursor < end) {
+      const d = new Date(cursor);
+      const utcDay = d.getUTCDay();
+      const isWknd = utcDay === 0 || utcDay === 6;
+
+      let type, segEnd;
+      if (isWknd) {
+        type = 'weekend';
+        // Runs until next UTC midnight or local day end
+        const nextUtcMid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
+        segEnd = Math.min(nextUtcMid, end);
+      } else {
+        const utcDayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+        const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
+        const peakEnd = utcDayStart + PEAK_END_UTC * 3600000;
+        const nextUtcMid = utcDayStart + DAY_MS;
+
+        if (cursor < peakStart) {
+          type = 'promo';
+          segEnd = Math.min(peakStart, end);
+        } else if (cursor < peakEnd) {
+          type = 'peak';
+          segEnd = Math.min(peakEnd, end);
+        } else {
+          type = 'promo';
+          segEnd = Math.min(nextUtcMid, end);
+        }
+      }
+
+      raw.push({ type, startMs: cursor - localMidnightTs, endMs: segEnd - localMidnightTs });
+      cursor = segEnd;
+    }
+
+    // Merge adjacent segments of same type
+    const merged = [raw[0]];
+    for (let i = 1; i < raw.length; i++) {
+      const last = merged[merged.length - 1];
+      if (raw[i].type === last.type) {
+        last.endMs = raw[i].endMs;
+      } else {
+        merged.push(raw[i]);
+      }
+    }
+    return merged;
+  }
+
   function buildWeeklyTimeline() {
     const container = document.getElementById('wtDays');
     container.innerHTML = '';
     const now = new Date();
     const nowTs = now.getTime();
+    const DAY_MS = 86400000;
 
-    // Find the Monday of the current week (UTC)
-    const utcDay = now.getUTCDay();
-    const daysFromMon = utcDay === 0 ? 6 : utcDay - 1;
-    const monDate = new Date(Date.UTC(
-      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysFromMon
-    ));
+    // Time scale row — local 00:00–24:00
+    const scaleRow = document.createElement('div');
+    scaleRow.className = 'wt-scale';
+    const scaleGutter = document.createElement('div');
+    scaleGutter.className = 'wt-scale-gutter';
+    scaleRow.appendChild(scaleGutter);
+    const scaleTrack = document.createElement('div');
+    scaleTrack.className = 'wt-scale-track';
+    for (const h of [0, 6, 12, 18, 24]) {
+      const tick = document.createElement('span');
+      tick.className = 'wt-tick';
+      tick.style.left = ((h / 24) * 100) + '%';
+      tick.textContent = String(h).padStart(2, '0') + ':00';
+      scaleTrack.appendChild(tick);
+    }
+    scaleRow.appendChild(scaleTrack);
+    container.appendChild(scaleRow);
+
+    // Find local Monday of this week
+    const localDay = now.getDay();
+    const daysFromMon = localDay === 0 ? 6 : localDay - 1;
+    const monLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysFromMon);
     const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
     for (let i = 0; i < 7; i++) {
-      const dayStart = Date.UTC(
-        monDate.getUTCFullYear(), monDate.getUTCMonth(), monDate.getUTCDate() + i
-      );
-      const dayEnd = dayStart + 86400000;
-      const dayDate = new Date(dayStart);
-      const dow = dayDate.getUTCDay();
-      const isWeekend = dow === 0 || dow === 6;
-      const isToday = (nowTs >= dayStart && nowTs < dayEnd);
+      const dayLocal = new Date(monLocal.getFullYear(), monLocal.getMonth(), monLocal.getDate() + i);
+      const dayStartTs = dayLocal.getTime(); // UTC timestamp of local midnight
+      const dayEndTs = dayStartTs + DAY_MS;
+      const isToday = (nowTs >= dayStartTs && nowTs < dayEndTs);
 
       const row = document.createElement('div');
       row.className = 'wt-row' + (isToday ? ' is-today' : '');
@@ -622,35 +733,21 @@ footer a:hover { text-decoration: underline; }
       const barWrap = document.createElement('div');
       barWrap.className = 'wt-bar-wrap';
 
-      if (isWeekend) {
+      const segments = getLocalDaySegments(dayStartTs);
+      for (const s of segments) {
         const seg = document.createElement('div');
-        seg.className = 'wt-seg wt-seg-weekend';
-        seg.style.flex = '1';
-        if (nowTs >= dayEnd) seg.classList.add('past');
-        else if (isToday) seg.classList.add('current');
+        seg.className = `wt-seg wt-seg-${s.type}`;
+        seg.style.flex = (s.endMs - s.startMs).toString();
+        const segStartTs = dayStartTs + s.startMs;
+        const segEndTs = dayStartTs + s.endMs;
+        if (nowTs >= segEndTs) seg.classList.add('past');
+        else if (nowTs >= segStartTs && nowTs < segEndTs) seg.classList.add('current');
         barWrap.appendChild(seg);
-      } else {
-        const segments = [
-          { start: 0, end: PEAK_START_UTC, type: 'promo' },
-          { start: PEAK_START_UTC, end: PEAK_END_UTC, type: 'peak' },
-          { start: PEAK_END_UTC, end: 24, type: 'promo' },
-        ];
-        for (const s of segments) {
-          const seg = document.createElement('div');
-          seg.className = `wt-seg wt-seg-${s.type}`;
-          seg.style.flex = (s.end - s.start).toString();
-          const segStartTs = dayStart + s.start * 3600000;
-          const segEndTs = dayStart + s.end * 3600000;
-          if (nowTs >= segEndTs) seg.classList.add('past');
-          else if (nowTs >= segStartTs && nowTs < segEndTs) seg.classList.add('current');
-          barWrap.appendChild(seg);
-        }
       }
 
-      // "Now" indicator — vertical line positioned by left%
+      // "Now" indicator
       if (isToday) {
-        const elapsed = nowTs - dayStart;
-        const pct = (elapsed / 86400000) * 100;
+        const pct = ((nowTs - dayStartTs) / DAY_MS) * 100;
         const nowLine = document.createElement('div');
         nowLine.className = 'wt-now';
         nowLine.style.left = pct + '%';
@@ -699,6 +796,18 @@ footer a:hover { text-decoration: underline; }
         badge.className = 'badge badge-allday';
         badge.textContent = 'ALL DAY';
         timesEl.appendChild(badge);
+        const localMid = formatLocalTime(0);
+        if (localMid !== '00:00') {
+          const note = document.createElement('span');
+          note.style.opacity = '0.5';
+          note.style.marginLeft = '0.4em';
+          if (utcDay === 6) { // Sat — first weekend day
+            note.textContent = `${localMid} –`;
+          } else { // Sun — last weekend day
+            note.textContent = `– ${dayNames[1]} ${localMid}`;
+          }
+          timesEl.appendChild(note);
+        }
       } else {
         const peakStart = formatLocalTime(PEAK_START_UTC);
         const peakEnd = formatLocalTime(PEAK_END_UTC);
@@ -738,12 +847,19 @@ footer a:hover { text-decoration: underline; }
         subtitleEl.textContent = '2x usage active';
         subtitleJaEl.textContent = '2倍の使用量が有効です';
         break;
-      case 'WEEKEND_PROMO':
+      case 'WEEKEND_PROMO': {
         answerEl.textContent = 'YES';
         answerEl.className = 'yes';
-        subtitleEl.textContent = 'Weekend — all day promo!';
-        subtitleJaEl.textContent = '週末は終日プロモーション！';
+        const wkLocalMid = formatLocalTime(0);
+        if (wkLocalMid === '00:00') {
+          subtitleEl.textContent = 'Weekend — all day promo!';
+          subtitleJaEl.textContent = '週末は終日プロモーション！';
+        } else {
+          subtitleEl.textContent = `Weekend promo! Sat ${wkLocalMid} – Mon ${wkLocalMid}`;
+          subtitleJaEl.textContent = `週末プロモ！ 土${wkLocalMid}〜月${wkLocalMid}`;
+        }
         break;
+      }
       case 'PEAK':
         answerEl.textContent = 'NO';
         answerEl.className = 'no';

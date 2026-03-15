@@ -391,11 +391,11 @@ h1 {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
-.badge-allday {
+.badge-allday, .badge-promo {
   background: rgba(0, 230, 118, 0.12);
   color: var(--yes-color);
 }
-[data-theme="anthropic"] .badge-allday {
+[data-theme="anthropic"] .badge-allday, [data-theme="anthropic"] .badge-promo {
   background: rgba(46, 125, 50, 0.1);
 }
 
@@ -632,7 +632,8 @@ footer a:hover { text-decoration: underline; }
 
   // === Build weekly timeline ===
   // Compute promo segments for a local day (local 00:00–24:00).
-  // Returns array of { type: 'promo'|'peak'|'weekend', startMs, endMs } relative to local midnight.
+  // Returns array of { type: 'promo'|'peak', startMs, endMs } relative to local midnight.
+  // Weekend and weekday promo are both 2x, so unified as 'promo' for seamless merging.
   function getLocalDaySegments(localMidnightTs) {
     const DAY_MS = 86400000;
     const raw = [];
@@ -646,8 +647,7 @@ footer a:hover { text-decoration: underline; }
 
       let type, segEnd;
       if (isWknd) {
-        type = 'weekend';
-        // Runs until next UTC midnight or local day end
+        type = 'promo';
         const nextUtcMid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
         segEnd = Math.min(nextUtcMid, end);
       } else {
@@ -759,6 +759,13 @@ footer a:hover { text-decoration: underline; }
     }
   }
 
+  // === Format ms offset within a day as HH:MM ===
+  function formatMsAsTime(ms) {
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+  }
+
   // === Build schedule ===
   function buildSchedule() {
     const container = document.getElementById('scheduleRows');
@@ -768,21 +775,14 @@ footer a:hover { text-decoration: underline; }
 
     // Show 7 days starting from today
     for (let i = 0; i < 7; i++) {
-      const d = new Date(now);
-      d.setDate(d.getDate() + i);
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const localMidnightTs = d.getTime();
 
-      // Check if this day is within promo period
-      const dayStart = new Date(d);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayStartUTC = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
-      // Rough check: is any part of this day in promo?
-      if (dayStartUTC > PROMO_END + 86400000 || dayStartUTC + 86400000 < PROMO_START) continue;
+      // Rough check: is any part of this local day in promo?
+      if (localMidnightTs > PROMO_END + 86400000 || localMidnightTs + 86400000 < PROMO_START) continue;
 
       const row = document.createElement('div');
       row.className = 'schedule-row';
-
-      const utcDay = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).getUTCDay();
-      const isWeekend = utcDay === 0 || utcDay === 6;
 
       const dayLabel = document.createElement('span');
       dayLabel.className = 'day';
@@ -791,27 +791,26 @@ footer a:hover { text-decoration: underline; }
       const timesEl = document.createElement('span');
       timesEl.className = 'times';
 
-      if (isWeekend) {
+      // Use local day segments to determine promo hours for this day
+      const segments = getLocalDaySegments(localMidnightTs);
+      const promoSegs = segments.filter(s => s.type === 'promo');
+
+      if (promoSegs.length === 1 && promoSegs[0].startMs === 0 && promoSegs[0].endMs === 86400000) {
+        // Full day promo
         const badge = document.createElement('span');
         badge.className = 'badge badge-allday';
         badge.textContent = 'ALL DAY';
         timesEl.appendChild(badge);
-        const localMid = formatLocalTime(0);
-        if (localMid !== '00:00') {
-          const note = document.createElement('span');
-          note.style.opacity = '0.5';
-          note.style.marginLeft = '0.4em';
-          if (utcDay === 6) { // Sat — first weekend day
-            note.textContent = `${localMid} –`;
-          } else { // Sun — last weekend day
-            note.textContent = `– ${dayNames[1]} ${localMid}`;
-          }
-          timesEl.appendChild(note);
-        }
       } else {
-        const peakStart = formatLocalTime(PEAK_START_UTC);
-        const peakEnd = formatLocalTime(PEAK_END_UTC);
-        timesEl.textContent = `peak ${peakStart}–${peakEnd}`;
+        // Show promo time ranges as badge + times
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-promo';
+        badge.textContent = '2x promo';
+        timesEl.appendChild(badge);
+        const promoStr = promoSegs
+          .map(s => `${formatMsAsTime(s.startMs)}–${formatMsAsTime(s.endMs)}`)
+          .join(', ');
+        timesEl.appendChild(document.createTextNode(` ${promoStr}`));
       }
 
       row.appendChild(dayLabel);

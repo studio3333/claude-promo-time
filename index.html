@@ -231,7 +231,27 @@ h1 {
 /* Segments */
 .wt-seg {
   height: 100%;
+  cursor: pointer;
 }
+
+/* Floating tooltip */
+.wt-tooltip {
+  position: fixed;
+  pointer-events: none;
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.12s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.wt-tooltip.visible { opacity: 1; }
 .wt-seg-promo {
   background: var(--yes-color);
   opacity: 0.5;
@@ -716,9 +736,17 @@ footer a:hover { text-decoration: underline; }
     const monLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysFromMon);
     const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
+    // Pre-compute segments for boundary days (day before first & day after last)
+    const allSegs = [];
+    for (let i = -1; i <= 7; i++) {
+      const d = new Date(monLocal.getFullYear(), monLocal.getMonth(), monLocal.getDate() + i);
+      allSegs.push(getLocalDaySegments(d.getTime()));
+    }
+    // allSegs index: day i => allSegs[i + 1]
+
     for (let i = 0; i < 7; i++) {
       const dayLocal = new Date(monLocal.getFullYear(), monLocal.getMonth(), monLocal.getDate() + i);
-      const dayStartTs = dayLocal.getTime(); // UTC timestamp of local midnight
+      const dayStartTs = dayLocal.getTime();
       const dayEndTs = dayStartTs + DAY_MS;
       const isToday = (nowTs >= dayStartTs && nowTs < dayEndTs);
 
@@ -733,11 +761,32 @@ footer a:hover { text-decoration: underline; }
       const barWrap = document.createElement('div');
       barWrap.className = 'wt-bar-wrap';
 
-      const segments = getLocalDaySegments(dayStartTs);
+      const segments = allSegs[i + 1];
+      const prevSegs = allSegs[i];
+      const nextSegs = allSegs[i + 2];
+
       for (const s of segments) {
         const seg = document.createElement('div');
         seg.className = `wt-seg wt-seg-${s.type}`;
         seg.style.flex = (s.endMs - s.startMs).toString();
+
+        // Resolve true start/end for segments split at midnight
+        let trueStart = formatMsAsTime(s.startMs);
+        let trueEnd = formatMsAsTime(s.endMs);
+        if (s.startMs === 0 && s.endMs < DAY_MS && prevSegs.length > 0) {
+          const last = prevSegs[prevSegs.length - 1];
+          if (last.type === s.type && last.endMs === DAY_MS) {
+            trueStart = formatMsAsTime(last.startMs);
+          }
+        }
+        if (s.endMs === DAY_MS && s.startMs > 0 && nextSegs.length > 0) {
+          const first = nextSegs[0];
+          if (first.type === s.type && first.startMs === 0) {
+            trueEnd = formatMsAsTime(first.endMs);
+          }
+        }
+
+        seg.dataset.tooltip = `${s.type === 'promo' ? '2x Promo' : 'Peak'}: ${trueStart}–${trueEnd}`;
         const segStartTs = dayStartTs + s.startMs;
         const segEndTs = dayStartTs + s.endMs;
         if (nowTs >= segEndTs) seg.classList.add('past');
@@ -908,6 +957,28 @@ footer a:hover { text-decoration: underline; }
       progressBar.style.width = '0%';
     }
   }
+
+  // Tooltip
+  const tooltip = document.createElement('div');
+  tooltip.className = 'wt-tooltip';
+  document.body.appendChild(tooltip);
+
+  const wtContainer = document.getElementById('wtDays');
+  wtContainer.addEventListener('mouseenter', e => {
+    const seg = e.target.closest('.wt-seg');
+    if (!seg || !seg.dataset.tooltip) return;
+    tooltip.textContent = seg.dataset.tooltip;
+    tooltip.classList.add('visible');
+  }, true);
+  wtContainer.addEventListener('mousemove', e => {
+    tooltip.style.left = (e.clientX + 10) + 'px';
+    tooltip.style.top = (e.clientY - 32) + 'px';
+  }, true);
+  wtContainer.addEventListener('mouseleave', e => {
+    const seg = e.target.closest('.wt-seg');
+    if (!seg) return;
+    tooltip.classList.remove('visible');
+  }, true);
 
   // Init
   buildSchedule();

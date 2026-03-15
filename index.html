@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Is it Claude Promo Time?</title>
+<meta name="description" content="Check if Claude's March 2026 usage promotion is active right now in your timezone. Double usage during off-peak hours!">
+<meta property="og:title" content="Is it Claude Promo Time?">
+<meta property="og:description" content="Check if Claude's 2x usage promotion is active right now in your local time.">
+<meta property="og:type" content="website">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+}
+
+/* Theme: Dark Minimal */
+[data-theme="dark"] {
+  --bg: #0c0c0c;
+  --bg-card: #161616;
+  --text: #ebebeb;
+  --text-dim: #9a9a9a;
+  --yes-color: #34d399;
+  --yes-glow: rgba(52, 211, 153, 0.25);
+  --no-color: #f87171;
+  --no-glow: rgba(248, 113, 113, 0.15);
+  --ended-color: #707070;
+  --amber-color: #fbbf24;
+  --accent: #e0b590;
+  --bar-bg: #282828;
+  --bar-fill: #34d399;
+  --border: #2a2a2a;
+  --toggle-bg: #1e1e1e;
+  --link: #e0b590;
+}
+
+/* Theme: Anthropic Brand */
+[data-theme="anthropic"] {
+  --bg: #faf6f1;
+  --bg-card: #fff;
+  --text: #1a1a1a;
+  --text-dim: #8a7a6a;
+  --yes-color: #2e7d32;
+  --yes-glow: rgba(46, 125, 50, 0.12);
+  --no-color: #c62828;
+  --no-glow: rgba(198, 40, 40, 0.08);
+  --ended-color: #999;
+  --amber-color: #e65100;
+  --accent: #c4956a;
+  --bar-bg: #ede7df;
+  --bar-fill: #c4956a;
+  --border: #e0d6ca;
+  --toggle-bg: #ede7df;
+  --link: #9a6b42;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  transition: background 0.4s, color 0.4s;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--toggle-bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, border-color 0.3s;
+  z-index: 10;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+
+main {
+  max-width: 480px;
+  width: 100%;
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(1.1rem, 4vw, 1.4rem);
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--text);
+  opacity: 0.7;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+}
+
+#answer {
+  font-size: clamp(4rem, 15vw, 8rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+  transition: color 0.4s, text-shadow 0.4s;
+}
+#answer.yes {
+  color: var(--yes-color);
+  text-shadow: 0 0 40px var(--yes-glow), 0 0 80px var(--yes-glow);
+}
+#answer.no {
+  color: var(--no-color);
+  text-shadow: 0 0 20px var(--no-glow);
+}
+#answer.ended { color: var(--ended-color); }
+#answer.not-yet { color: var(--amber-color); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+#answer.yes { animation: pulse 3s ease-in-out infinite; }
+
+#subtitle {
+  font-size: 1rem;
+  color: var(--text-dim);
+  margin-bottom: 0.3rem;
+}
+#subtitle-ja {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+}
+
+#countdown {
+  font-family: var(--font-mono);
+  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+#countdown-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1.5rem;
+}
+
+/* Session progress (thin bar) */
+.progress-wrap {
+  width: 100%;
+  height: 5px;
+  background: var(--bar-bg);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--bar-fill);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+/* Weekly timeline — horizontal rows */
+.weekly-timeline {
+  margin-bottom: 2.5rem;
+}
+.weekly-timeline-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  margin-bottom: 0.6rem;
+  text-align: left;
+}
+.wt-days {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 3px;
+}
+.wt-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 18px;
+}
+.wt-row.is-today {
+  height: 26px;
+}
+.wt-day-label {
+  font-size: 0.6rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  width: 2rem;
+  flex-shrink: 0;
+  text-align: right;
+  padding-right: 0.5rem;
+  letter-spacing: 0.03em;
+}
+.wt-row.is-today .wt-day-label {
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+.wt-bar-wrap {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+}
+.wt-row.is-today .wt-bar-wrap {
+  border-radius: 5px;
+}
+/* Segments */
+.wt-seg {
+  height: 100%;
+}
+.wt-seg-promo {
+  background: var(--yes-color);
+  opacity: 0.3;
+}
+.wt-seg-peak {
+  background: var(--no-color);
+  opacity: 0.2;
+}
+.wt-seg-weekend {
+  background: var(--yes-color);
+  opacity: 0.3;
+}
+.wt-seg.past { opacity: 0.08; }
+.wt-seg.current { opacity: 0.6; }
+.wt-row.is-today .wt-seg.current { opacity: 0.75; }
+
+/* Now indicator — vertical line */
+.wt-now {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text);
+  z-index: 3;
+  pointer-events: none;
+  border-radius: 1px;
+}
+.wt-now::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--text);
+}
+.wt-now::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 5px solid var(--text);
+}
+
+/* Legend */
+.wt-legend {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 0.5rem;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+}
+.wt-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.wt-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.wt-legend-swatch.promo {
+  background: var(--yes-color);
+  opacity: 0.5;
+}
+.wt-legend-swatch.peak {
+  background: var(--no-color);
+  opacity: 0.4;
+}
+
+.info-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1.5rem;
+  text-align: left;
+  margin-bottom: 1rem;
+  transition: background 0.4s, border-color 0.4s;
+}
+.info-card h2 {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  margin-bottom: 0.8rem;
+}
+.schedule-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+.schedule-row:last-child { border-bottom: none; }
+.schedule-row .day { color: var(--text); opacity: 0.7; min-width: 3.5rem; }
+.schedule-row .times { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text); }
+.schedule-row .badge {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 99px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.badge-allday {
+  background: rgba(0, 230, 118, 0.12);
+  color: var(--yes-color);
+}
+[data-theme="anthropic"] .badge-allday {
+  background: rgba(46, 125, 50, 0.1);
+}
+
+.plans-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.plan-tag {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  opacity: 0.8;
+}
+
+footer {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text);
+  opacity: 0.6;
+}
+footer a {
+  color: var(--link);
+  text-decoration: none;
+  opacity: 1;
+}
+footer a:hover { text-decoration: underline; }
+
+.tz-info {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+  font-family: var(--font-mono);
+}
+</style>
+</head>
+<body data-theme="dark">
+
+<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
+
+<main>
+  <h1>Is it Claude Promo Time?</h1>
+
+  <div id="answer"></div>
+  <div id="subtitle"></div>
+  <div id="subtitle-ja"></div>
+
+  <div id="countdown"></div>
+  <div id="countdown-label"></div>
+
+  <div class="progress-wrap">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <div class="weekly-timeline" id="weeklyTimeline">
+    <div class="weekly-timeline-label">Weekly overview</div>
+    <div class="wt-days" id="wtDays"></div>
+    <div class="wt-legend">
+      <span class="wt-legend-item"><span class="wt-legend-swatch promo"></span>2x promo</span>
+      <span class="wt-legend-item"><span class="wt-legend-swatch peak"></span>peak</span>
+    </div>
+  </div>
+
+  <div class="tz-info" id="tzInfo"></div>
+
+  <div class="info-card" id="scheduleCard">
+    <h2>This week in your timezone</h2>
+    <div id="scheduleRows"></div>
+  </div>
+
+  <div class="info-card">
+    <h2>Eligible plans</h2>
+    <div class="plans-list">
+      <span class="plan-tag">Free</span>
+      <span class="plan-tag">Pro</span>
+      <span class="plan-tag">Max</span>
+      <span class="plan-tag">Team</span>
+    </div>
+  </div>
+
+  <footer>
+    <p>March 13–27, 2026 &middot; <a href="https://support.claude.com/en/articles/14063676-claude-march-2026-usage-promotion" target="_blank" rel="noopener">Official details</a></p>
+    <p style="margin-top: 0.3rem;">Not affiliated with Anthropic</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  // === Promo config (all in UTC) ===
+  const PROMO_START = Date.UTC(2026, 2, 13, 0, 0, 0);  // Mar 13 00:00 UTC
+  const PROMO_END   = Date.UTC(2026, 2, 28, 7, 59, 0);  // Mar 27 23:59 PT = Mar 28 07:59 UTC
+  const PEAK_START_UTC = 13; // 8 AM ET
+  const PEAK_END_UTC   = 19; // 2 PM ET
+
+  // === Theme ===
+  const themeBtn = document.getElementById('themeToggle');
+  const body = document.body;
+
+  function setTheme(theme) {
+    body.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    localStorage.setItem('claude-promo-theme', theme);
+  }
+
+  const savedTheme = localStorage.getItem('claude-promo-theme') || 'dark';
+  setTheme(savedTheme);
+  themeBtn.addEventListener('click', () => {
+    setTheme(body.getAttribute('data-theme') === 'dark' ? 'anthropic' : 'dark');
+  });
+
+  // === Status logic ===
+  function getPromoStatus(now) {
+    const ts = now.getTime();
+    if (ts < PROMO_START) return 'NOT_STARTED';
+    if (ts > PROMO_END)   return 'ENDED';
+
+    const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
+    if (utcDay === 0 || utcDay === 6) return 'WEEKEND_PROMO';
+
+    const utcHour = now.getUTCHours();
+    if (utcHour >= PEAK_START_UTC && utcHour < PEAK_END_UTC) return 'PEAK';
+    return 'WEEKDAY_PROMO';
+  }
+
+  // === Next transition time ===
+  function getNextTransition(now, status) {
+    const ts = now.getTime();
+
+    if (status === 'NOT_STARTED') return { time: PROMO_START, label: 'Starts in', labelJa: '開始まで' };
+
+    if (status === 'ENDED') return null;
+
+    if (status === 'WEEKEND_PROMO') {
+      // Find next Monday 00:00 UTC
+      const d = new Date(now);
+      const daysToMon = (8 - d.getUTCDay()) % 7 || 7;
+      const nextMon = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
+      const target = Math.min(nextMon, PROMO_END);
+      return { time: target, label: target < nextMon ? 'Promo ends in' : 'Peak starts in', labelJa: target < nextMon ? 'プロモ終了まで' : 'ピーク開始まで' };
+    }
+
+    if (status === 'PEAK') {
+      const d = new Date(now);
+      const offPeak = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
+      return { time: offPeak, label: 'Off-peak in', labelJa: 'オフピークまで' };
+    }
+
+    if (status === 'WEEKDAY_PROMO') {
+      const d = new Date(now);
+      const utcHour = d.getUTCHours();
+      let target;
+      if (utcHour < PEAK_START_UTC) {
+        // Before peak today
+        target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
+      } else {
+        // After peak, next transition is next day's peak (or weekend)
+        const tomorrow = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
+        const tDay = tomorrow.getUTCDay();
+        if (tDay === 0 || tDay === 6) {
+          // Weekend starts - promo continues all weekend, next peak is Monday
+          const daysToMon = (8 - tDay) % 7 || 7;
+          target = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
+        } else {
+          target = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), PEAK_START_UTC, 0, 0);
+        }
+      }
+      target = Math.min(target, PROMO_END);
+      return { time: target, label: 'Peak starts in', labelJa: 'ピーク開始まで' };
+    }
+
+    return null;
+  }
+
+  // === Current session boundaries for progress bar ===
+  function getSessionBounds(now, status) {
+    const d = new Date(now);
+    if (status === 'PEAK') {
+      const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
+      const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
+      return { start, end };
+    }
+    if (status === 'WEEKDAY_PROMO') {
+      const utcHour = d.getUTCHours();
+      if (utcHour < PEAK_START_UTC) {
+        const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0);
+        const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
+        return { start, end };
+      } else {
+        const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
+        const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 0, 0, 0);
+        return { start, end };
+      }
+    }
+    if (status === 'WEEKEND_PROMO') {
+      // Find Saturday 00:00 UTC
+      const dayOfWeek = d.getUTCDay();
+      const daysSinceSat = dayOfWeek === 0 ? 1 : dayOfWeek - 6;
+      const satDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceSat));
+      const start = Date.UTC(satDate.getUTCFullYear(), satDate.getUTCMonth(), satDate.getUTCDate(), 0, 0, 0);
+      const end = Date.UTC(satDate.getUTCFullYear(), satDate.getUTCMonth(), satDate.getUTCDate() + 2, 0, 0, 0);
+      return { start, end };
+    }
+    return null;
+  }
+
+  // === Format duration ===
+  function formatDuration(ms) {
+    if (ms <= 0) return '0:00:00';
+    const totalSec = Math.floor(ms / 1000);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  }
+
+  // === Format time in local tz ===
+  function formatLocalTime(hour, minute) {
+    const d = new Date();
+    d.setUTCHours(hour, minute || 0, 0, 0);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  }
+
+  // === Get timezone name ===
+  function getTimezoneName() {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'Local';
+    }
+  }
+
+  // === Build weekly timeline ===
+  function buildWeeklyTimeline() {
+    const container = document.getElementById('wtDays');
+    container.innerHTML = '';
+    const now = new Date();
+    const nowTs = now.getTime();
+
+    // Find the Monday of the current week (UTC)
+    const utcDay = now.getUTCDay();
+    const daysFromMon = utcDay === 0 ? 6 : utcDay - 1;
+    const monDate = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysFromMon
+    ));
+    const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+    for (let i = 0; i < 7; i++) {
+      const dayStart = Date.UTC(
+        monDate.getUTCFullYear(), monDate.getUTCMonth(), monDate.getUTCDate() + i
+      );
+      const dayEnd = dayStart + 86400000;
+      const dayDate = new Date(dayStart);
+      const dow = dayDate.getUTCDay();
+      const isWeekend = dow === 0 || dow === 6;
+      const isToday = (nowTs >= dayStart && nowTs < dayEnd);
+
+      const row = document.createElement('div');
+      row.className = 'wt-row' + (isToday ? ' is-today' : '');
+
+      const label = document.createElement('div');
+      label.className = 'wt-day-label';
+      label.textContent = dayLabels[i];
+      row.appendChild(label);
+
+      const barWrap = document.createElement('div');
+      barWrap.className = 'wt-bar-wrap';
+
+      if (isWeekend) {
+        const seg = document.createElement('div');
+        seg.className = 'wt-seg wt-seg-weekend';
+        seg.style.flex = '1';
+        if (nowTs >= dayEnd) seg.classList.add('past');
+        else if (isToday) seg.classList.add('current');
+        barWrap.appendChild(seg);
+      } else {
+        const segments = [
+          { start: 0, end: PEAK_START_UTC, type: 'promo' },
+          { start: PEAK_START_UTC, end: PEAK_END_UTC, type: 'peak' },
+          { start: PEAK_END_UTC, end: 24, type: 'promo' },
+        ];
+        for (const s of segments) {
+          const seg = document.createElement('div');
+          seg.className = `wt-seg wt-seg-${s.type}`;
+          seg.style.flex = (s.end - s.start).toString();
+          const segStartTs = dayStart + s.start * 3600000;
+          const segEndTs = dayStart + s.end * 3600000;
+          if (nowTs >= segEndTs) seg.classList.add('past');
+          else if (nowTs >= segStartTs && nowTs < segEndTs) seg.classList.add('current');
+          barWrap.appendChild(seg);
+        }
+      }
+
+      // "Now" indicator — vertical line positioned by left%
+      if (isToday) {
+        const elapsed = nowTs - dayStart;
+        const pct = (elapsed / 86400000) * 100;
+        const nowLine = document.createElement('div');
+        nowLine.className = 'wt-now';
+        nowLine.style.left = pct + '%';
+        barWrap.appendChild(nowLine);
+      }
+
+      row.appendChild(barWrap);
+      container.appendChild(row);
+    }
+  }
+
+  // === Build schedule ===
+  function buildSchedule() {
+    const container = document.getElementById('scheduleRows');
+    container.innerHTML = '';
+    const now = new Date();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Show 7 days starting from today
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+
+      // Check if this day is within promo period
+      const dayStart = new Date(d);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayStartUTC = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+      // Rough check: is any part of this day in promo?
+      if (dayStartUTC > PROMO_END + 86400000 || dayStartUTC + 86400000 < PROMO_START) continue;
+
+      const row = document.createElement('div');
+      row.className = 'schedule-row';
+
+      const utcDay = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).getUTCDay();
+      const isWeekend = utcDay === 0 || utcDay === 6;
+
+      const dayLabel = document.createElement('span');
+      dayLabel.className = 'day';
+      dayLabel.textContent = `${dayNames[d.getDay()]} ${d.getDate()}`;
+
+      const timesEl = document.createElement('span');
+      timesEl.className = 'times';
+
+      if (isWeekend) {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-allday';
+        badge.textContent = 'ALL DAY';
+        timesEl.appendChild(badge);
+      } else {
+        const peakStart = formatLocalTime(PEAK_START_UTC);
+        const peakEnd = formatLocalTime(PEAK_END_UTC);
+        timesEl.textContent = `peak ${peakStart}–${peakEnd}`;
+      }
+
+      row.appendChild(dayLabel);
+      row.appendChild(timesEl);
+      container.appendChild(row);
+    }
+  }
+
+  // === Main update ===
+  const answerEl = document.getElementById('answer');
+  const subtitleEl = document.getElementById('subtitle');
+  const subtitleJaEl = document.getElementById('subtitle-ja');
+  const countdownEl = document.getElementById('countdown');
+  const countdownLabelEl = document.getElementById('countdown-label');
+  const progressBar = document.getElementById('progressBar');
+  const tzInfoEl = document.getElementById('tzInfo');
+
+  function update() {
+    const now = new Date();
+    const status = getPromoStatus(now);
+
+    // Timezone info
+    const tz = getTimezoneName();
+    const peakLocal = `${formatLocalTime(PEAK_START_UTC)}–${formatLocalTime(PEAK_END_UTC)}`;
+    tzInfoEl.textContent = `${tz} · peak ${peakLocal}`;
+
+    // Answer
+    answerEl.className = '';
+    switch (status) {
+      case 'WEEKDAY_PROMO':
+        answerEl.textContent = 'YES';
+        answerEl.className = 'yes';
+        subtitleEl.textContent = '2x usage active';
+        subtitleJaEl.textContent = '2倍の使用量が有効です';
+        break;
+      case 'WEEKEND_PROMO':
+        answerEl.textContent = 'YES';
+        answerEl.className = 'yes';
+        subtitleEl.textContent = 'Weekend — all day promo!';
+        subtitleJaEl.textContent = '週末は終日プロモーション！';
+        break;
+      case 'PEAK':
+        answerEl.textContent = 'NO';
+        answerEl.className = 'no';
+        subtitleEl.textContent = 'Peak hours — standard usage';
+        subtitleJaEl.textContent = 'ピーク時間帯・通常の使用量';
+        break;
+      case 'ENDED':
+        answerEl.textContent = 'ENDED';
+        answerEl.className = 'ended';
+        subtitleEl.textContent = 'Promo ended March 27, 2026';
+        subtitleJaEl.textContent = 'プロモーションは3月27日に終了しました';
+        break;
+      case 'NOT_STARTED':
+        answerEl.textContent = 'NOT YET';
+        answerEl.className = 'not-yet';
+        subtitleEl.textContent = 'Starts March 13, 2026';
+        subtitleJaEl.textContent = '3月13日に開始予定';
+        break;
+    }
+
+    // Countdown
+    const transition = getNextTransition(now, status);
+    if (transition) {
+      const remaining = transition.time - now.getTime();
+      countdownEl.textContent = formatDuration(remaining);
+      countdownLabelEl.textContent = `${transition.label} / ${transition.labelJa}`;
+    } else {
+      countdownEl.textContent = '';
+      countdownLabelEl.textContent = '';
+    }
+
+    // Progress bar
+    const bounds = getSessionBounds(now, status);
+    if (bounds) {
+      const elapsed = now.getTime() - bounds.start;
+      const total = bounds.end - bounds.start;
+      const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
+      progressBar.style.width = pct + '%';
+
+      // Color the bar based on status
+      if (status === 'PEAK') {
+        progressBar.style.background = 'var(--no-color)';
+      } else {
+        progressBar.style.background = 'var(--bar-fill)';
+      }
+    } else {
+      progressBar.style.width = '0%';
+    }
+  }
+
+  // Init
+  buildSchedule();
+  buildWeeklyTimeline();
+  update();
+  setInterval(() => { update(); buildWeeklyTimeline(); }, 1000);
+  // Rebuild schedule at midnight
+  setInterval(buildSchedule, 3600000);
+})();
+</script>
+</body>
+</html>

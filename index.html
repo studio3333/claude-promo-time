@@ -670,7 +670,8 @@ footer a:hover { text-decoration: underline; }
   // === Get timezone name ===
   function getTimezoneName() {
     try {
-      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return tz === 'Europe/Kiev' ? 'Europe/Kyiv' : tz;
     } catch {
       return 'Local';
     }

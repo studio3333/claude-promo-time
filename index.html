@@ -528,16 +528,35 @@ footer a:hover { text-decoration: underline; }
   const themeBtn = document.getElementById('themeToggle');
   const body = document.body;
 
-  function setTheme(theme) {
+  function applyTheme(theme) {
     body.setAttribute('data-theme', theme);
     themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
-    localStorage.setItem('claude-promo-theme', theme);
   }
 
-  const savedTheme = localStorage.getItem('claude-promo-theme') || 'dark';
-  setTheme(savedTheme);
+  function osTheme() {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'anthropic';
+  }
+
+  // null = follow OS, 'dark'/'anthropic' = manual override
+  let userPref = localStorage.getItem('claude-promo-theme');
+  applyTheme(userPref || osTheme());
+
+  // Follow OS changes when no manual override
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if (!userPref) applyTheme(osTheme());
+  });
+
   themeBtn.addEventListener('click', () => {
-    setTheme(body.getAttribute('data-theme') === 'dark' ? 'anthropic' : 'dark');
+    const next = body.getAttribute('data-theme') === 'dark' ? 'anthropic' : 'dark';
+    // If clicking back to what OS would give, clear override
+    if (next === osTheme()) {
+      userPref = null;
+      localStorage.removeItem('claude-promo-theme');
+    } else {
+      userPref = next;
+      localStorage.setItem('claude-promo-theme', next);
+    }
+    applyTheme(next);
   });
 
   // === Status logic ===

@@ -433,6 +433,33 @@ h1 {
   opacity: 0.8;
 }
 
+/* Collapsible info-card */
+.info-card.collapsible h2 {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0;
+  user-select: none;
+}
+.info-card.collapsible h2::after {
+  content: '+';
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+.info-card.collapsible.open h2 { margin-bottom: 0.8rem; }
+.info-card.collapsible.open h2::after { content: '\2212'; }
+.info-card.collapsible .collapsible-body {
+  display: none;
+}
+.info-card.collapsible.open .collapsible-body {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 footer {
   margin-top: 2rem;
   text-align: center;
@@ -446,6 +473,43 @@ footer a {
   opacity: 1;
 }
 footer a:hover { text-decoration: underline; }
+
+/* Service status */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.82rem;
+}
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.operational { background: var(--yes-color); }
+.status-dot.degraded_performance { background: var(--amber-color); }
+.status-dot.partial_outage, .status-dot.major_outage { background: var(--no-color); }
+.status-dot.under_maintenance { background: var(--text-dim); }
+.status-name { flex: 1; color: var(--text); opacity: 0.8; }
+.status-label { font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); }
+.status-incident {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--amber-color);
+  line-height: 1.4;
+}
+.status-link {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--link);
+  text-decoration: none;
+}
+.status-link:hover { text-decoration: underline; }
 
 .tz-info {
   font-size: 0.8rem;
@@ -484,14 +548,20 @@ footer a:hover { text-decoration: underline; }
 
   <div class="tz-info" id="tzInfo"></div>
 
+  <div class="info-card" id="statusCard" style="display:none">
+    <h2>Service status</h2>
+    <div id="statusRows"></div>
+    <a class="status-link" href="https://status.claude.com" target="_blank" rel="noopener">status.claude.com &rarr;</a>
+  </div>
+
   <div class="info-card" id="scheduleCard">
     <h2>Promo windows in your timezone</h2>
     <div id="scheduleRows"></div>
   </div>
 
-  <div class="info-card">
+  <div class="info-card collapsible">
     <h2>Eligible plans</h2>
-    <div class="plans-list">
+    <div class="collapsible-body">
       <span class="plan-tag">Free</span>
       <span class="plan-tag">Pro</span>
       <span class="plan-tag">Max</span>
@@ -499,9 +569,9 @@ footer a:hover { text-decoration: underline; }
     </div>
   </div>
 
-  <div class="info-card">
+  <div class="info-card collapsible">
     <h2>Supported platforms</h2>
-    <div class="plans-list">
+    <div class="collapsible-body">
       <span class="plan-tag">Claude (web / desktop / mobile)</span>
       <span class="plan-tag">Cowork</span>
       <span class="plan-tag">Claude Code</span>
@@ -1087,13 +1157,68 @@ footer a:hover { text-decoration: underline; }
     tooltip.classList.remove('visible');
   }, true);
 
+  // === Collapsible info cards ===
+  document.querySelectorAll('.info-card.collapsible h2').forEach(h2 => {
+    h2.addEventListener('click', () => h2.parentElement.classList.toggle('open'));
+  });
+
+  // === Service status from status.claude.com ===
+  const STATUS_COMPONENTS = ['claude.ai', 'Claude API', 'Claude Code'];
+  const STATUS_LABELS = {
+    operational: 'Operational',
+    degraded_performance: 'Degraded',
+    partial_outage: 'Partial outage',
+    major_outage: 'Major outage',
+    under_maintenance: 'Maintenance'
+  };
+
+  async function fetchStatus() {
+    const card = document.getElementById('statusCard');
+    const container = document.getElementById('statusRows');
+    try {
+      const res = await fetch('https://status.claude.com/api/v2/summary.json');
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+
+      const components = data.components.filter(c =>
+        STATUS_COMPONENTS.some(name => c.name.includes(name))
+      );
+
+      let html = '';
+      for (const comp of components) {
+        const label = STATUS_LABELS[comp.status] || comp.status;
+        // Use short display name
+        const displayName = STATUS_COMPONENTS.find(n => comp.name.includes(n)) || comp.name;
+        html += `<div class="status-row">
+          <span class="status-dot ${comp.status}"></span>
+          <span class="status-name">${displayName}</span>
+          <span class="status-label">${label}</span>
+        </div>`;
+      }
+
+      // Active incidents
+      const incidents = (data.incidents || []).filter(inc => inc.status !== 'resolved');
+      for (const inc of incidents.slice(0, 2)) {
+        html += `<div class="status-incident">${inc.name}</div>`;
+      }
+
+      container.innerHTML = html;
+      card.style.display = '';
+    } catch {
+      card.style.display = 'none';
+    }
+  }
+
   // Init
   buildSchedule();
   buildWeeklyTimeline();
   update();
+  fetchStatus();
   setInterval(() => { update(); buildWeeklyTimeline(); }, 1000);
   // Rebuild schedule at midnight
   setInterval(buildSchedule, 3600000);
+  // Refresh service status every 5 minutes
+  setInterval(fetchStatus, 300000);
 })();
 </script>
 </body>

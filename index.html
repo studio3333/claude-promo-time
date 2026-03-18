@@ -703,9 +703,18 @@ footer a:hover { text-decoration: underline; }
     if (status === 'WEEKDAY_PROMO') {
       const utcHour = d.getUTCHours();
       if (utcHour < PEAK_START_UTC) {
-        const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0);
+        const yesterday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1));
+        const yDay = yesterday.getUTCDay();
+        let start;
+        if (yDay >= 1 && yDay <= 5) {
+          // Yesterday was a weekday — off-peak started at yesterday's peak end
+          start = Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), PEAK_END_UTC, 0, 0);
+        } else {
+          // Yesterday was weekend (Sun→Mon) — session started at midnight
+          start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0);
+        }
         const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
-        return { start, end };
+        return { start: Math.max(start, PROMO_START), end };
       } else {
         const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
         const tomorrow = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
@@ -721,15 +730,15 @@ footer a:hover { text-decoration: underline; }
       }
     }
     if (status === 'WEEKEND_PROMO') {
-      // Find Saturday 00:00 UTC
-      const dayOfWeek = d.getUTCDay();
-      const daysSinceSat = dayOfWeek === 0 ? 1 : dayOfWeek - 6;
-      const satDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceSat));
-      const start = Date.UTC(satDate.getUTCFullYear(), satDate.getUTCMonth(), satDate.getUTCDate(), 0, 0, 0);
+      const dayOfWeek = d.getUTCDay(); // 0=Sun, 6=Sat
+      // Session started at Friday's peak end (off-peak is continuous from Fri evening)
+      const daysToFri = dayOfWeek === 0 ? 2 : dayOfWeek - 5;
+      const friDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysToFri));
+      const start = Date.UTC(friDate.getUTCFullYear(), friDate.getUTCMonth(), friDate.getUTCDate(), PEAK_END_UTC, 0, 0);
       // End at Monday peak start (matches countdown target)
       const daysToMon = (8 - d.getUTCDay()) % 7 || 7;
       const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
-      return { start, end: Math.min(end, PROMO_END) };
+      return { start: Math.max(start, PROMO_START), end: Math.min(end, PROMO_END) };
     }
     return null;
   }

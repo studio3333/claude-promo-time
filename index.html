@@ -70,25 +70,27 @@ body {
   transition: background 0.4s, color 0.4s;
 }
 
-.theme-toggle {
+.top-btn {
   position: fixed;
   top: 1rem;
-  right: 1rem;
   background: var(--toggle-bg);
   border: 1px solid var(--border);
-  color: var(--text);
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
+  color: var(--text-dim);
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-size: 1.1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.3s, border-color 0.3s;
+  transition: background 0.3s, border-color 0.3s, color 0.3s;
   z-index: 10;
 }
-.theme-toggle:hover { border-color: var(--accent); }
+.top-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.top-btn:hover { border-color: var(--accent); color: var(--text); }
+.theme-toggle { right: 1rem; }
+.notif-toggle { right: 3.8rem; }
+.notif-toggle.active { color: var(--yes-color); border-color: var(--yes-color); }
 
 main {
   max-width: 480px;
@@ -521,7 +523,8 @@ footer a:hover { text-decoration: underline; }
 </head>
 <body data-theme="dark">
 
-<button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
+<button class="top-btn notif-toggle" id="notifToggle" aria-label="Toggle notifications" title="Notifications off"></button>
+<button class="top-btn theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
 
 <main>
   <h1>Is it Claude Promo Time?</h1>
@@ -600,7 +603,9 @@ footer a:hover { text-decoration: underline; }
 
   function applyTheme(theme) {
     body.setAttribute('data-theme', theme);
-    themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+    themeBtn.innerHTML = theme === 'dark'
+      ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
   }
 
   function osTheme() {
@@ -798,6 +803,19 @@ footer a:hover { text-decoration: underline; }
 
     while (cursor < end) {
       const d = new Date(cursor);
+
+      // Outside promo period → treat as peak (standard usage)
+      if (cursor >= PROMO_END) {
+        raw.push({ type: 'peak', startMs: cursor - localMidnightTs, endMs: end - localMidnightTs });
+        break;
+      }
+      if (cursor < PROMO_START) {
+        const segEnd = Math.min(PROMO_START, end);
+        raw.push({ type: 'peak', startMs: cursor - localMidnightTs, endMs: segEnd - localMidnightTs });
+        cursor = segEnd;
+        continue;
+      }
+
       const utcDay = d.getUTCDay();
       const isWknd = utcDay === 0 || utcDay === 6;
 
@@ -805,7 +823,7 @@ footer a:hover { text-decoration: underline; }
       if (isWknd) {
         type = 'promo';
         const nextUtcMid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
-        segEnd = Math.min(nextUtcMid, end);
+        segEnd = Math.min(nextUtcMid, end, PROMO_END);
       } else {
         const utcDayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
         const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
@@ -814,13 +832,13 @@ footer a:hover { text-decoration: underline; }
 
         if (cursor < peakStart) {
           type = 'promo';
-          segEnd = Math.min(peakStart, end);
+          segEnd = Math.min(peakStart, end, PROMO_END);
         } else if (cursor < peakEnd) {
           type = 'peak';
           segEnd = Math.min(peakEnd, end);
         } else {
           type = 'promo';
-          segEnd = Math.min(nextUtcMid, end);
+          segEnd = Math.min(nextUtcMid, end, PROMO_END);
         }
       }
 
@@ -1053,6 +1071,51 @@ footer a:hover { text-decoration: underline; }
     }
   }
 
+  // === Notifications ===
+  const notifBtn = document.getElementById('notifToggle');
+  let notifEnabled = localStorage.getItem('claude-promo-notif') === 'on';
+  let prevStatus = null;
+
+  function updateNotifBtn() {
+    notifBtn.innerHTML = notifEnabled
+      ? '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+      : '<svg viewBox="0 0 24 24"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+    notifBtn.classList.toggle('active', notifEnabled);
+    notifBtn.title = notifEnabled ? 'Notifications on' : 'Notifications off';
+  }
+  updateNotifBtn();
+
+  notifBtn.addEventListener('click', async () => {
+    if (!notifEnabled) {
+      if (!('Notification' in window)) { alert('This browser does not support notifications.'); return; }
+      const perm = Notification.permission === 'granted'
+        ? 'granted'
+        : await Notification.requestPermission();
+      if (perm !== 'granted') return;
+      notifEnabled = true;
+      localStorage.setItem('claude-promo-notif', 'on');
+    } else {
+      notifEnabled = false;
+      localStorage.removeItem('claude-promo-notif');
+    }
+    updateNotifBtn();
+  });
+
+  const NOTIF_MESSAGES = {
+    WEEKDAY_PROMO: { title: 'Promo Time!', body: '2x usage is now active. Off-peak hours started.', bodyJa: '2倍使用量が有効になりました' },
+    WEEKEND_PROMO:  { title: 'Weekend Promo!', body: '2x usage is active all weekend.', bodyJa: '週末プロモーション開始！' },
+    PEAK:           { title: 'Peak Hours Started', body: 'Standard usage — promo paused until off-peak.', bodyJa: 'ピーク時間帯・プロモ一時停止' },
+    ENDED:          { title: 'Promo Ended', body: 'The March 2026 promotion has ended.', bodyJa: 'プロモーションが終了しました' },
+    NOT_STARTED:    null,
+  };
+
+  function sendStatusNotification(status) {
+    if (!notifEnabled || Notification.permission !== 'granted') return;
+    const msg = NOTIF_MESSAGES[status];
+    if (!msg) return;
+    new Notification(msg.title, { body: `${msg.body}\n${msg.bodyJa}`, icon: 'favicon.svg' });
+  }
+
   // === Main update ===
   const answerEl = document.getElementById('answer');
   const subtitleEl = document.getElementById('subtitle');
@@ -1065,6 +1128,12 @@ footer a:hover { text-decoration: underline; }
   function update() {
     const now = new Date();
     const status = getPromoStatus(now);
+
+    // Notify on status transition
+    if (prevStatus !== null && status !== prevStatus) {
+      sendStatusNotification(status);
+    }
+    prevStatus = status;
 
     // Timezone info
     const tz = getTimezoneName();

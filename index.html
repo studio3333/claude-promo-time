@@ -27,7 +27,7 @@
   --yes-glow: rgba(52, 211, 153, 0.25);
   --no-color: #f87171;
   --no-glow: rgba(248, 113, 113, 0.15);
-  --ended-color: #707070;
+  --ended-color: #e0b590;
   --amber-color: #fbbf24;
   --accent: #e0b590;
   --bar-bg: #282828;
@@ -47,7 +47,7 @@
   --yes-glow: rgba(46, 125, 50, 0.12);
   --no-color: #c62828;
   --no-glow: rgba(198, 40, 40, 0.08);
-  --ended-color: #999;
+  --ended-color: #c4956a;
   --amber-color: #e65100;
   --accent: #c4956a;
   --bar-bg: #ede7df;
@@ -124,7 +124,10 @@ h1 {
   color: var(--no-color);
   text-shadow: 0 0 20px var(--no-glow);
 }
-#answer.ended { color: var(--ended-color); }
+#answer.ended {
+  color: var(--ended-color);
+  text-shadow: 0 0 30px rgba(224, 181, 144, 0.2), 0 0 60px rgba(224, 181, 144, 0.1);
+}
 #answer.not-yet { color: var(--amber-color); }
 
 @keyframes pulse {
@@ -132,6 +135,7 @@ h1 {
   50% { opacity: 0.7; }
 }
 #answer.yes { animation: pulse 3s ease-in-out infinite; }
+#answer.ended { animation: pulse 5s ease-in-out infinite; }
 
 #subtitle {
   font-size: 1rem;
@@ -1251,8 +1255,8 @@ footer a:hover { text-decoration: underline; }
       case 'ENDED':
         answerEl.textContent = 'ENDED';
         answerEl.className = 'ended';
-        subtitleEl.textContent = 'Promo ended March 27, 2026';
-        subtitleJaEl.textContent = 'プロモーションは3月27日に終了しました';
+        subtitleEl.textContent = 'The promo has ended — hope to see you next time!';
+        subtitleJaEl.textContent = '';
         break;
       case 'NOT_STARTED':
         answerEl.textContent = 'NOT YET';
@@ -1290,6 +1294,17 @@ footer a:hover { text-decoration: underline; }
     } else {
       progressBar.style.width = '0%';
     }
+
+    // Hide promo-specific sections when ended
+    const isEnded = status === 'ENDED';
+    document.querySelector('.progress-wrap').style.display = isEnded ? 'none' : '';
+    document.getElementById('weeklyTimeline').style.display = isEnded ? 'none' : '';
+    document.getElementById('scheduleCard').style.display = isEnded ? 'none' : '';
+    document.getElementById('tzInfo').style.display = isEnded ? 'none' : '';
+    document.getElementById('notifBanner').style.display = isEnded ? 'none' : '';
+    document.querySelectorAll('.info-card.collapsible').forEach(el => {
+      el.style.display = isEnded ? 'none' : '';
+    });
   }
 
   // Tooltip

@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Is it Claude Promo Time?</title>
-<meta name="description" content="Check if Claude's March 2026 usage promotion is active right now in your timezone. Double usage during off-peak hours!">
-<meta property="og:title" content="Is it Claude Promo Time?">
-<meta property="og:description" content="Check if Claude's 2x usage promotion is active right now in your local time.">
+<title>Is it Claude Peak Time?</title>
+<meta name="description" content="Check if Claude's session limits are active right now. Peak hours are Mon–Fri 13:00–19:00 UTC (5–11 AM PST / 6 AM–noon PDT).">
+<meta property="og:title" content="Is it Claude Peak Time?">
+<meta property="og:description" content="Find out if Claude peak hours (session limits) are active right now in your local time. Weekdays 13:00–19:00 UTC.">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
@@ -109,7 +109,7 @@ h1 {
 }
 
 #answer {
-  font-size: clamp(4rem, 15vw, 8rem);
+  font-size: clamp(2.5rem, 10vw, 6rem);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -117,35 +117,23 @@ h1 {
   transition: color 0.4s, text-shadow 0.4s;
 }
 #answer.yes {
-  color: var(--yes-color);
-  text-shadow: 0 0 40px var(--yes-glow), 0 0 80px var(--yes-glow);
+  color: var(--no-color);
+  text-shadow: 0 0 40px var(--no-glow), 0 0 80px var(--no-glow);
 }
 #answer.no {
-  color: var(--no-color);
-  text-shadow: 0 0 20px var(--no-glow);
+  color: var(--yes-color);
+  text-shadow: 0 0 20px var(--yes-glow);
 }
-#answer.ended {
-  color: var(--ended-color);
-  text-shadow: 0 0 30px rgba(224, 181, 144, 0.2), 0 0 60px rgba(224, 181, 144, 0.1);
-}
-#answer.not-yet { color: var(--amber-color); }
-
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.7; }
 }
 #answer.yes { animation: pulse 3s ease-in-out infinite; }
-#answer.ended { animation: pulse 5s ease-in-out infinite; }
 
 #subtitle {
   font-size: 1rem;
   color: var(--text-dim);
-  margin-bottom: 0.3rem;
-}
-#subtitle-ja {
-  font-size: 0.85rem;
-  color: var(--text-dim);
-  margin-bottom: 2rem;
+  margin-bottom: 1.8rem;
 }
 
 #countdown {
@@ -258,17 +246,13 @@ h1 {
   box-shadow: 0 2px 8px rgba(0,0,0,0.25);
 }
 .wt-tooltip.visible { opacity: 1; }
-.wt-seg-promo {
-  background: var(--yes-color);
-  opacity: 0.5;
-}
 .wt-seg-peak {
   background: var(--no-color);
-  opacity: 0.35;
-}
-.wt-seg-weekend {
-  background: var(--yes-color);
   opacity: 0.5;
+}
+.wt-seg-offpeak {
+  background: var(--bar-bg);
+  opacity: 1;
 }
 .wt-seg.past { opacity: 0.18; }
 .wt-seg.current { opacity: 0.7; }
@@ -373,13 +357,13 @@ h1 {
   height: 10px;
   border-radius: 2px;
 }
-.wt-legend-swatch.promo {
-  background: var(--yes-color);
-  opacity: 0.5;
-}
 .wt-legend-swatch.peak {
   background: var(--no-color);
-  opacity: 0.4;
+  opacity: 0.5;
+}
+.wt-legend-swatch.offpeak {
+  background: var(--bar-bg);
+  opacity: 1;
 }
 
 .info-card {
@@ -397,73 +381,6 @@ h1 {
   letter-spacing: 0.12em;
   color: var(--text-dim);
   margin-bottom: 0.8rem;
-}
-.schedule-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.35rem 0;
-  font-size: 0.85rem;
-  border-bottom: 1px solid var(--border);
-}
-.schedule-row:last-child { border-bottom: none; }
-.schedule-row .day { color: var(--text); opacity: 0.7; min-width: 3.5rem; }
-.schedule-row .times { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text); }
-.schedule-row .badge {
-  font-size: 0.65rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 99px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.badge-allday, .badge-promo {
-  background: rgba(0, 230, 118, 0.12);
-  color: var(--yes-color);
-}
-[data-theme="anthropic"] .badge-allday, [data-theme="anthropic"] .badge-promo {
-  background: rgba(46, 125, 50, 0.1);
-}
-
-.plans-list {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-.plan-tag {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  color: var(--text);
-  opacity: 0.8;
-}
-
-/* Collapsible info-card */
-.info-card.collapsible h2 {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0;
-  user-select: none;
-}
-.info-card.collapsible h2::after {
-  content: '+';
-  font-size: 0.9rem;
-  font-weight: 400;
-  color: var(--text-dim);
-  transition: transform 0.2s;
-}
-.info-card.collapsible.open h2 { margin-bottom: 0.8rem; }
-.info-card.collapsible.open h2::after { content: '\2212'; }
-.info-card.collapsible .collapsible-body {
-  display: none;
-}
-.info-card.collapsible.open .collapsible-body {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 footer {
@@ -573,11 +490,10 @@ footer a:hover { text-decoration: underline; }
 <button class="top-btn theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
 
 <main>
-  <h1>Is it Claude Promo Time?</h1>
+  <h1>Claude Peak Hours</h1>
 
   <div id="answer"></div>
   <div id="subtitle"></div>
-  <div id="subtitle-ja"></div>
 
   <div id="countdown"></div>
   <div id="countdown-label"></div>
@@ -588,7 +504,7 @@ footer a:hover { text-decoration: underline; }
 
   <div class="notif-banner" id="notifBanner" style="display:none">
     <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    <span class="notif-banner-text">Get notified when promo starts or ends</span>
+    <span class="notif-banner-text">Get notified when peak hours start or end</span>
     <button class="notif-banner-btn" id="notifBannerBtn">Turn on notifications</button>
     <button class="notif-banner-close" id="notifBannerClose" aria-label="Close">&times;</button>
   </div>
@@ -597,8 +513,8 @@ footer a:hover { text-decoration: underline; }
     <div class="weekly-timeline-label">Weekly overview</div>
     <div class="wt-days" id="wtDays"></div>
     <div class="wt-legend">
-      <span class="wt-legend-item"><span class="wt-legend-swatch promo"></span>2x promo</span>
       <span class="wt-legend-item"><span class="wt-legend-swatch peak"></span>peak</span>
+      <span class="wt-legend-item"><span class="wt-legend-swatch offpeak"></span>off-peak</span>
     </div>
   </div>
 
@@ -610,45 +526,19 @@ footer a:hover { text-decoration: underline; }
     <a class="status-link" href="https://status.claude.com" target="_blank" rel="noopener">status.claude.com &rarr;</a>
   </div>
 
-  <div class="info-card" id="scheduleCard">
-    <h2>Promo windows in your timezone</h2>
-    <div id="scheduleRows"></div>
-  </div>
-
-  <div class="info-card collapsible">
-    <h2>Eligible plans</h2>
-    <div class="collapsible-body">
-      <span class="plan-tag">Free</span>
-      <span class="plan-tag">Pro</span>
-      <span class="plan-tag">Max</span>
-      <span class="plan-tag">Team</span>
-    </div>
-  </div>
-
-  <div class="info-card collapsible">
-    <h2>Supported platforms</h2>
-    <div class="collapsible-body">
-      <span class="plan-tag">Claude (web / desktop / mobile)</span>
-      <span class="plan-tag">Cowork</span>
-      <span class="plan-tag">Claude Code</span>
-      <span class="plan-tag">Claude for Excel</span>
-      <span class="plan-tag">Claude for PowerPoint</span>
-    </div>
-  </div>
 
   <footer>
-    <p>March 13–28, 2026 &middot; <a href="https://support.claude.com/en/articles/14063676-claude-march-2026-usage-promotion" target="_blank" rel="noopener">Official details</a></p>
+    <p><a href="https://support.claude.com" target="_blank" rel="noopener">support.claude.com</a></p>
     <p style="margin-top: 0.3rem;">Not affiliated with Anthropic</p>
   </footer>
 </main>
 
 <script>
 (() => {
-  // === Promo config (all in UTC) ===
-  const PROMO_START = Date.UTC(2026, 2, 13, 0, 0, 0);  // Mar 13 00:00 UTC
-  const PROMO_END   = Date.UTC(2026, 2, 29, 6, 59, 0);  // Mar 28 23:59 PDT = Mar 29 06:59 UTC
-  const PEAK_START_UTC = 12; // 8 AM EDT (UTC-4)
-  const PEAK_END_UTC   = 18; // 2 PM EDT (UTC-4)
+  // === Peak hours config (UTC) ===
+  // Mon–Fri 13:00–19:00 UTC = 1–7 PM GMT = 5–11 AM PST = 6 AM–noon PDT
+  const PEAK_START_UTC = 13;
+  const PEAK_END_UTC   = 19;
 
   // === Theme ===
   const themeBtn = document.getElementById('themeToggle');
@@ -688,63 +578,42 @@ footer a:hover { text-decoration: underline; }
   });
 
   // === Status logic ===
-  function getPromoStatus(now) {
-    const ts = now.getTime();
-    if (ts < PROMO_START) return 'NOT_STARTED';
-    if (ts > PROMO_END)   return 'ENDED';
-
-    const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
-    if (utcDay === 0 || utcDay === 6) return 'WEEKEND_PROMO';
-
+  function getPeakStatus(now) {
+    const utcDay  = now.getUTCDay();   // 0=Sun, 6=Sat
     const utcHour = now.getUTCHours();
-    if (utcHour >= PEAK_START_UTC && utcHour < PEAK_END_UTC) return 'PEAK';
-    return 'WEEKDAY_PROMO';
+    if (utcDay >= 1 && utcDay <= 5 && utcHour >= PEAK_START_UTC && utcHour < PEAK_END_UTC)
+      return 'PEAK';
+    return 'OFF_PEAK';
   }
 
   // === Next transition time ===
   function getNextTransition(now, status) {
-    const ts = now.getTime();
-
-    if (status === 'NOT_STARTED') return { time: PROMO_START, label: 'Starts in', labelJa: '開始まで' };
-
-    if (status === 'ENDED') return null;
-
-    if (status === 'WEEKEND_PROMO') {
-      // Find next Monday 00:00 UTC
-      const d = new Date(now);
-      const daysToMon = (8 - d.getUTCDay()) % 7 || 7;
-      const nextMon = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
-      const target = Math.min(nextMon, PROMO_END);
-      return { time: target, label: target < nextMon ? 'Promo ends in' : 'Peak starts in', labelJa: target < nextMon ? 'プロモ終了まで' : 'ピーク開始まで' };
-    }
+    const d = new Date(now);
 
     if (status === 'PEAK') {
-      const d = new Date(now);
-      const offPeak = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
-      return { time: offPeak, label: 'Off-peak in', labelJa: 'オフピークまで' };
+      const off = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
+      return { time: off, label: 'Off-peak in' };
     }
 
-    if (status === 'WEEKDAY_PROMO') {
-      const d = new Date(now);
-      const utcHour = d.getUTCHours();
-      let target;
-      if (utcHour < PEAK_START_UTC) {
-        // Before peak today
-        target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
-      } else {
-        // After peak, next transition is next day's peak (or weekend)
-        const tomorrow = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
-        const tDay = tomorrow.getUTCDay();
-        if (tDay === 0 || tDay === 6) {
-          // Weekend starts - promo continues all weekend, next peak is Monday
-          const daysToMon = (8 - tDay) % 7 || 7;
-          target = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
-        } else {
-          target = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), PEAK_START_UTC, 0, 0);
-        }
+    // OFF_PEAK: find next weekday peak start
+    const utcDay  = d.getUTCDay();
+    const utcHour = d.getUTCHours();
+
+    // Weekday before today's peak
+    if (utcDay >= 1 && utcDay <= 5 && utcHour < PEAK_START_UTC) {
+      const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
+      return { time: target, label: 'Peak starts in' };
+    }
+
+    // After today's peak (or weekend): find next weekday
+    let daysAhead = 1;
+    while (daysAhead <= 7) {
+      const candidate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysAhead));
+      if (candidate.getUTCDay() >= 1 && candidate.getUTCDay() <= 5) {
+        const target = Date.UTC(candidate.getUTCFullYear(), candidate.getUTCMonth(), candidate.getUTCDate(), PEAK_START_UTC, 0, 0);
+        return { time: target, label: 'Peak starts in' };
       }
-      target = Math.min(target, PROMO_END);
-      return { time: target, label: 'Peak starts in', labelJa: 'ピーク開始まで' };
+      daysAhead++;
     }
 
     return null;
@@ -753,52 +622,58 @@ footer a:hover { text-decoration: underline; }
   // === Current session boundaries for progress bar ===
   function getSessionBounds(now, status) {
     const d = new Date(now);
+    const yy = d.getUTCFullYear(), mo = d.getUTCMonth(), dd = d.getUTCDate();
+    const utcDay = d.getUTCDay(), utcHour = d.getUTCHours();
+
     if (status === 'PEAK') {
-      const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
-      const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
-      return { start, end };
+      return {
+        start: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0),
+        end:   Date.UTC(yy, mo, dd, PEAK_END_UTC,   0, 0)
+      };
     }
-    if (status === 'WEEKDAY_PROMO') {
-      const utcHour = d.getUTCHours();
+
+    // OFF_PEAK on a weekday
+    if (utcDay >= 1 && utcDay <= 5) {
       if (utcHour < PEAK_START_UTC) {
-        const yesterday = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 1));
-        const yDay = yesterday.getUTCDay();
+        // Before today's peak: prev day's 19:00 → today 13:00
+        const prevDay = new Date(Date.UTC(yy, mo, dd - 1));
+        const pvDay = prevDay.getUTCDay();
         let start;
-        if (yDay >= 1 && yDay <= 5) {
-          // Yesterday was a weekday — off-peak started at yesterday's peak end
-          start = Date.UTC(yesterday.getUTCFullYear(), yesterday.getUTCMonth(), yesterday.getUTCDate(), PEAK_END_UTC, 0, 0);
+        if (pvDay >= 1 && pvDay <= 5) {
+          start = Date.UTC(prevDay.getUTCFullYear(), prevDay.getUTCMonth(), prevDay.getUTCDate(), PEAK_END_UTC, 0, 0);
         } else {
-          // Yesterday was weekend (Sun→Mon) — session started at midnight
-          start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0);
+          // Yesterday was Sunday → back to Friday 19:00
+          const daysToFri = pvDay === 0 ? 2 : 1; // Sun→-2=Fri, Sat→-1=Fri
+          const fri = new Date(Date.UTC(prevDay.getUTCFullYear(), prevDay.getUTCMonth(), prevDay.getUTCDate() - daysToFri));
+          start = Date.UTC(fri.getUTCFullYear(), fri.getUTCMonth(), fri.getUTCDate(), PEAK_END_UTC, 0, 0);
         }
-        const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
-        return { start: Math.max(start, PROMO_START), end };
+        return { start, end: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0) };
       } else {
-        const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
-        const tomorrow = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
+        // After today's peak: today 19:00 → next weekday 13:00
+        const start = Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0);
+        const tomorrow = new Date(Date.UTC(yy, mo, dd + 1));
         const tDay = tomorrow.getUTCDay();
         let end;
-        if (tDay === 0 || tDay === 6) {
-          const daysToMon = (8 - tDay) % 7 || 7;
-          end = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
-        } else {
+        if (tDay >= 1 && tDay <= 5) {
           end = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), PEAK_START_UTC, 0, 0);
+        } else {
+          // Tomorrow is Sat (+2=Mon) or Sun (+1=Mon)
+          const daysToMon = tDay === 6 ? 2 : 1;
+          const mon = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon));
+          end = Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate(), PEAK_START_UTC, 0, 0);
         }
-        return { start, end: Math.min(end, PROMO_END) };
+        return { start, end };
       }
     }
-    if (status === 'WEEKEND_PROMO') {
-      const dayOfWeek = d.getUTCDay(); // 0=Sun, 6=Sat
-      // Session started at Friday's peak end (off-peak is continuous from Fri evening)
-      const daysToFri = dayOfWeek === 0 ? 2 : dayOfWeek - 5;
-      const friDate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysToFri));
-      const start = Date.UTC(friDate.getUTCFullYear(), friDate.getUTCMonth(), friDate.getUTCDate(), PEAK_END_UTC, 0, 0);
-      // End at Monday peak start (matches countdown target)
-      const daysToMon = (8 - d.getUTCDay()) % 7 || 7;
-      const end = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMon, PEAK_START_UTC, 0, 0);
-      return { start: Math.max(start, PROMO_START), end: Math.min(end, PROMO_END) };
-    }
-    return null;
+
+    // Weekend: Fri 19:00 → Mon 13:00
+    const daysToFri = utcDay === 6 ? 1 : 2; // Sat→-1=Fri, Sun→-2=Fri
+    const fri = new Date(Date.UTC(yy, mo, dd - daysToFri));
+    const start = Date.UTC(fri.getUTCFullYear(), fri.getUTCMonth(), fri.getUTCDate(), PEAK_END_UTC, 0, 0);
+    const daysToMon = utcDay === 6 ? 2 : 1; // Sat→+2=Mon, Sun→+1=Mon
+    const mon = new Date(Date.UTC(yy, mo, dd + daysToMon));
+    const end = Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate(), PEAK_START_UTC, 0, 0);
+    return { start, end };
   }
 
   // === Format duration ===
@@ -826,13 +701,6 @@ footer a:hover { text-decoration: underline; }
     const m = String(d.getMinutes()).padStart(2, '0');
     return `${days[d.getDay()]} ${h}:${m}`;
   }
-  function formatDateTimeShortJa(ts) {
-    const d = new Date(ts);
-    const days = ['日', '月', '火', '水', '木', '金', '土'];
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    return `${days[d.getDay()]}${h}:${m}`;
-  }
 
   // === Get timezone name ===
   function getTimezoneName() {
@@ -845,9 +713,8 @@ footer a:hover { text-decoration: underline; }
   }
 
   // === Build weekly timeline ===
-  // Compute promo segments for a local day (local 00:00–24:00).
-  // Returns array of { type: 'promo'|'peak', startMs, endMs } relative to local midnight.
-  // Weekend and weekday promo are both 2x, so unified as 'promo' for seamless merging.
+  // Compute segments for a local day (local 00:00–24:00).
+  // Returns array of { type: 'peak'|'offpeak', startMs, endMs } relative to local midnight.
   function getLocalDaySegments(localMidnightTs) {
     const DAY_MS = 86400000;
     const raw = [];
@@ -856,42 +723,29 @@ footer a:hover { text-decoration: underline; }
 
     while (cursor < end) {
       const d = new Date(cursor);
-
-      // Outside promo period → treat as peak (standard usage)
-      if (cursor >= PROMO_END) {
-        raw.push({ type: 'peak', startMs: cursor - localMidnightTs, endMs: end - localMidnightTs });
-        break;
-      }
-      if (cursor < PROMO_START) {
-        const segEnd = Math.min(PROMO_START, end);
-        raw.push({ type: 'peak', startMs: cursor - localMidnightTs, endMs: segEnd - localMidnightTs });
-        cursor = segEnd;
-        continue;
-      }
-
       const utcDay = d.getUTCDay();
       const isWknd = utcDay === 0 || utcDay === 6;
 
       let type, segEnd;
       if (isWknd) {
-        type = 'promo';
+        type = 'offpeak';
         const nextUtcMid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
-        segEnd = Math.min(nextUtcMid, end, PROMO_END);
+        segEnd = Math.min(nextUtcMid, end);
       } else {
         const utcDayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
         const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
-        const peakEnd = utcDayStart + PEAK_END_UTC * 3600000;
+        const peakEnd   = utcDayStart + PEAK_END_UTC   * 3600000;
         const nextUtcMid = utcDayStart + DAY_MS;
 
         if (cursor < peakStart) {
-          type = 'promo';
-          segEnd = Math.min(peakStart, end, PROMO_END);
+          type = 'offpeak';
+          segEnd = Math.min(peakStart, end);
         } else if (cursor < peakEnd) {
           type = 'peak';
           segEnd = Math.min(peakEnd, end);
         } else {
-          type = 'promo';
-          segEnd = Math.min(nextUtcMid, end, PROMO_END);
+          type = 'offpeak';
+          segEnd = Math.min(nextUtcMid, end);
         }
       }
 
@@ -910,48 +764,6 @@ footer a:hover { text-decoration: underline; }
       }
     }
     return merged;
-  }
-
-  // === Compute continuous promo ranges across multiple days ===
-  function getPromoRanges(baseDate, daysBefore, daysAfter) {
-    const DAY_MS = 86400000;
-    const baseDay = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-    const allSegments = [];
-
-    for (let i = -daysBefore; i <= daysAfter; i++) {
-      const d = new Date(baseDay.getFullYear(), baseDay.getMonth(), baseDay.getDate() + i);
-      const dayTs = d.getTime();
-      const segs = getLocalDaySegments(dayTs);
-      for (const seg of segs) {
-        allSegments.push({
-          type: seg.type,
-          start: dayTs + seg.startMs,
-          end: dayTs + seg.endMs
-        });
-      }
-    }
-
-    // Merge adjacent promo segments
-    const ranges = [];
-    let cur = null;
-    for (const seg of allSegments) {
-      if (seg.type === 'promo') {
-        if (cur && seg.start <= cur.end) {
-          cur.end = Math.max(cur.end, seg.end);
-        } else {
-          if (cur) ranges.push(cur);
-          cur = { start: seg.start, end: seg.end };
-        }
-      } else {
-        if (cur) { ranges.push(cur); cur = null; }
-      }
-    }
-    if (cur) ranges.push(cur);
-
-    // Clamp to promo period
-    return ranges
-      .map(r => ({ start: Math.max(r.start, PROMO_START), end: Math.min(r.end, PROMO_END) }))
-      .filter(r => r.start < r.end);
   }
 
   function buildWeeklyTimeline() {
@@ -1035,7 +847,7 @@ footer a:hover { text-decoration: underline; }
           }
         }
 
-        seg.dataset.tooltip = `${s.type === 'promo' ? '2x Promo' : 'Peak'}: ${trueStart}–${trueEnd}`;
+        seg.dataset.tooltip = `${s.type === 'peak' ? 'Peak' : 'Off-peak'}: ${trueStart}–${trueEnd}`;
         const segStartTs = dayStartTs + s.startMs;
         const segEndTs = dayStartTs + s.endMs;
         if (nowTs >= segEndTs) seg.classList.add('past');
@@ -1062,66 +874,6 @@ footer a:hover { text-decoration: underline; }
     const h = Math.floor(ms / 3600000);
     const m = Math.floor((ms % 3600000) / 60000);
     return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-  }
-
-  // === Build schedule ===
-  function buildSchedule() {
-    const container = document.getElementById('scheduleRows');
-    container.innerHTML = '';
-    const now = new Date();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    const ranges = getPromoRanges(now, 2, 15);
-    // Show ranges that haven't ended yet
-    const relevant = ranges.filter(r => r.end > now.getTime()).slice(0, 10);
-
-    for (const range of relevant) {
-      const startD = new Date(range.start);
-      const endD = new Date(range.end);
-
-      const row = document.createElement('div');
-      row.className = 'schedule-row';
-
-      const dayLabel = document.createElement('span');
-      dayLabel.className = 'day';
-
-      const timesEl = document.createElement('span');
-      timesEl.className = 'times';
-
-      const sameDay = startD.getFullYear() === endD.getFullYear() &&
-                      startD.getMonth() === endD.getMonth() &&
-                      startD.getDate() === endD.getDate();
-
-      const startTime = String(startD.getHours()).padStart(2, '0') + ':' + String(startD.getMinutes()).padStart(2, '0');
-      const endTime = String(endD.getHours()).padStart(2, '0') + ':' + String(endD.getMinutes()).padStart(2, '0');
-
-      if (sameDay) {
-        dayLabel.textContent = `${dayNames[startD.getDay()]} ${startD.getDate()}`;
-        if (startTime === '00:00' && endTime === '00:00') {
-          const badge = document.createElement('span');
-          badge.className = 'badge badge-allday';
-          badge.textContent = 'ALL DAY';
-          timesEl.appendChild(badge);
-        } else {
-          const badge = document.createElement('span');
-          badge.className = 'badge badge-promo';
-          badge.textContent = '2x promo';
-          timesEl.appendChild(badge);
-          timesEl.appendChild(document.createTextNode(`  ${startTime}–${endTime}`));
-        }
-      } else {
-        dayLabel.textContent = `${dayNames[startD.getDay()]} ${startD.getDate()} – ${dayNames[endD.getDay()]} ${endD.getDate()}`;
-        const badge = document.createElement('span');
-        badge.className = 'badge badge-promo';
-        badge.textContent = '2x promo';
-        timesEl.appendChild(badge);
-        timesEl.appendChild(document.createTextNode(`  ${dayNames[startD.getDay()]} ${startTime} – ${dayNames[endD.getDay()]} ${endTime}`));
-      }
-
-      row.appendChild(dayLabel);
-      row.appendChild(timesEl);
-      container.appendChild(row);
-    }
   }
 
   // === Notifications ===
@@ -1185,24 +937,20 @@ footer a:hover { text-decoration: underline; }
   });
 
   const NOTIF_MESSAGES = {
-    WEEKDAY_PROMO: { title: 'Promo Time!', body: '2x usage is now active. Off-peak hours started.', bodyJa: '2倍使用量が有効になりました' },
-    WEEKEND_PROMO:  { title: 'Weekend Promo!', body: '2x usage is active all weekend.', bodyJa: '週末プロモーション開始！' },
-    PEAK:           { title: 'Peak Hours Started', body: 'Standard usage — promo paused until off-peak.', bodyJa: 'ピーク時間帯・プロモ一時停止' },
-    ENDED:          { title: 'Promo Ended', body: 'The March 2026 promotion has ended.', bodyJa: 'プロモーションが終了しました' },
-    NOT_STARTED:    null,
+    PEAK:     { title: 'Peak Hours Started', body: 'Session limits are now active.' },
+    OFF_PEAK: { title: 'Off-Peak Started',   body: 'Enjoy unrestricted usage.' },
   };
 
   function sendStatusNotification(status) {
     if (!notifEnabled || Notification.permission !== 'granted') return;
     const msg = NOTIF_MESSAGES[status];
     if (!msg) return;
-    new Notification(msg.title, { body: `${msg.body}\n${msg.bodyJa}`, icon: 'favicon.svg' });
+    new Notification(msg.title, { body: msg.body, icon: 'favicon.svg' });
   }
 
   // === Main update ===
   const answerEl = document.getElementById('answer');
   const subtitleEl = document.getElementById('subtitle');
-  const subtitleJaEl = document.getElementById('subtitle-ja');
   const countdownEl = document.getElementById('countdown');
   const countdownLabelEl = document.getElementById('countdown-label');
   const progressBar = document.getElementById('progressBar');
@@ -1210,7 +958,7 @@ footer a:hover { text-decoration: underline; }
 
   function update() {
     const now = new Date();
-    const status = getPromoStatus(now);
+    const status = getPeakStatus(now);
 
     // Notify on status transition
     if (prevStatus !== null && status !== prevStatus) {
@@ -1221,48 +969,20 @@ footer a:hover { text-decoration: underline; }
     // Timezone info
     const tz = getTimezoneName();
     const peakLocal = `${formatLocalTime(PEAK_START_UTC)}–${formatLocalTime(PEAK_END_UTC)}`;
-    tzInfoEl.textContent = `${tz} · peak ${peakLocal}`;
+    tzInfoEl.textContent = `${tz} · peak hours ${peakLocal}`;
 
     // Answer
     answerEl.className = '';
     switch (status) {
-      case 'WEEKDAY_PROMO':
-        answerEl.textContent = 'YES';
-        answerEl.className = 'yes';
-        subtitleEl.textContent = '2x usage active';
-        subtitleJaEl.textContent = '2倍の使用量が有効です';
-        break;
-      case 'WEEKEND_PROMO': {
-        answerEl.textContent = 'YES';
-        answerEl.className = 'yes';
-        const ranges = getPromoRanges(now, 3, 3);
-        const currentRange = ranges.find(r => now.getTime() >= r.start && now.getTime() < r.end);
-        if (currentRange) {
-          subtitleEl.textContent = `Weekend promo! ${formatDateTimeShort(currentRange.start)} – ${formatDateTimeShort(currentRange.end)}`;
-          subtitleJaEl.textContent = `週末プロモ！ ${formatDateTimeShortJa(currentRange.start)}〜${formatDateTimeShortJa(currentRange.end)}`;
-        } else {
-          subtitleEl.textContent = 'Weekend — all day promo!';
-          subtitleJaEl.textContent = '週末は終日プロモーション！';
-        }
-        break;
-      }
       case 'PEAK':
-        answerEl.textContent = 'NO';
+        answerEl.textContent = 'PEAK';
+        answerEl.className = 'yes';
+        subtitleEl.textContent = 'Session limits apply';
+        break;
+      case 'OFF_PEAK':
+        answerEl.textContent = 'OFF-PEAK';
         answerEl.className = 'no';
-        subtitleEl.textContent = 'Peak hours — standard usage';
-        subtitleJaEl.textContent = 'ピーク時間帯・通常の使用量';
-        break;
-      case 'ENDED':
-        answerEl.textContent = 'ENDED';
-        answerEl.className = 'ended';
-        subtitleEl.textContent = 'The promo has ended — hope to see you next time!';
-        subtitleJaEl.textContent = '';
-        break;
-      case 'NOT_STARTED':
-        answerEl.textContent = 'NOT YET';
-        answerEl.className = 'not-yet';
-        subtitleEl.textContent = 'Starts March 13, 2026';
-        subtitleJaEl.textContent = '3月13日に開始予定';
+        subtitleEl.textContent = 'Unrestricted usage';
         break;
     }
 
@@ -1271,7 +991,7 @@ footer a:hover { text-decoration: underline; }
     if (transition) {
       const remaining = transition.time - now.getTime();
       countdownEl.textContent = formatDuration(remaining);
-      countdownLabelEl.textContent = `${transition.label} / ${transition.labelJa}`;
+      countdownLabelEl.textContent = transition.label;
     } else {
       countdownEl.textContent = '';
       countdownLabelEl.textContent = '';
@@ -1284,27 +1004,10 @@ footer a:hover { text-decoration: underline; }
       const total = bounds.end - bounds.start;
       const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
       progressBar.style.width = pct + '%';
-
-      // Color the bar based on status
-      if (status === 'PEAK') {
-        progressBar.style.background = 'var(--no-color)';
-      } else {
-        progressBar.style.background = 'var(--bar-fill)';
-      }
+      progressBar.style.background = status === 'PEAK' ? 'var(--no-color)' : 'var(--bar-fill)';
     } else {
       progressBar.style.width = '0%';
     }
-
-    // Hide promo-specific sections when ended
-    const isEnded = status === 'ENDED';
-    document.querySelector('.progress-wrap').style.display = isEnded ? 'none' : '';
-    document.getElementById('weeklyTimeline').style.display = isEnded ? 'none' : '';
-    document.getElementById('scheduleCard').style.display = isEnded ? 'none' : '';
-    document.getElementById('tzInfo').style.display = isEnded ? 'none' : '';
-    document.getElementById('notifBanner').style.display = isEnded ? 'none' : '';
-    document.querySelectorAll('.info-card.collapsible').forEach(el => {
-      el.style.display = isEnded ? 'none' : '';
-    });
   }
 
   // Tooltip
@@ -1329,10 +1032,6 @@ footer a:hover { text-decoration: underline; }
     tooltip.classList.remove('visible');
   }, true);
 
-  // === Collapsible info cards ===
-  document.querySelectorAll('.info-card.collapsible h2').forEach(h2 => {
-    h2.addEventListener('click', () => h2.parentElement.classList.toggle('open'));
-  });
 
   // === Service status from status.claude.com ===
   const STATUS_COMPONENTS = ['claude.ai', 'Claude API', 'Claude Code'];
@@ -1382,13 +1081,10 @@ footer a:hover { text-decoration: underline; }
   }
 
   // Init
-  buildSchedule();
   buildWeeklyTimeline();
   update();
   fetchStatus();
   setInterval(() => { update(); buildWeeklyTimeline(); }, 1000);
-  // Rebuild schedule at midnight
-  setInterval(buildSchedule, 3600000);
   // Refresh service status every 5 minutes
   setInterval(fetchStatus, 300000);
 })();

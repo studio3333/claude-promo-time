@@ -1,1094 +1,1476 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>if(location.hostname==='claude-promo-time.pages.dev'){location.replace('https://claude-peak-time.pages.dev'+location.pathname+location.search+location.hash);}</script>
-<title>Is it Claude Peak Time?</title>
-<meta name="description" content="Check if Claude's session limits are active right now. Peak hours are Mon–Fri 13:00–19:00 UTC (5–11 AM PST / 6 AM–noon PDT).">
-<meta property="og:title" content="Is it Claude Peak Time?">
-<meta property="og:description" content="Find out if Claude peak hours (session limits) are active right now in your local time. Weekdays 13:00–19:00 UTC.">
-<meta property="og:type" content="website">
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --font-sans: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'SF Mono', 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
-}
-
-/* Theme: Dark Minimal */
-[data-theme="dark"] {
-  --bg: #0c0c0c;
-  --bg-card: #161616;
-  --text: #ebebeb;
-  --text-dim: #9a9a9a;
-  --yes-color: #34d399;
-  --yes-glow: rgba(52, 211, 153, 0.25);
-  --no-color: #f87171;
-  --no-glow: rgba(248, 113, 113, 0.15);
-  --ended-color: #e0b590;
-  --amber-color: #fbbf24;
-  --accent: #e0b590;
-  --bar-bg: #282828;
-  --bar-fill: #34d399;
-  --border: #2a2a2a;
-  --toggle-bg: #1e1e1e;
-  --link: #e0b590;
-}
-
-/* Theme: Anthropic Brand */
-[data-theme="anthropic"] {
-  --bg: #faf6f1;
-  --bg-card: #fff;
-  --text: #1a1a1a;
-  --text-dim: #8a7a6a;
-  --yes-color: #2e7d32;
-  --yes-glow: rgba(46, 125, 50, 0.12);
-  --no-color: #c62828;
-  --no-glow: rgba(198, 40, 40, 0.08);
-  --ended-color: #c4956a;
-  --amber-color: #e65100;
-  --accent: #c4956a;
-  --bar-bg: #ede7df;
-  --bar-fill: #c4956a;
-  --border: #e0d6ca;
-  --toggle-bg: #ede7df;
-  --link: #9a6b42;
-}
-
-body {
-  font-family: var(--font-sans);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem 1rem;
-  transition: background 0.4s, color 0.4s;
-}
-
-.top-btn {
-  position: fixed;
-  top: 1rem;
-  background: var(--toggle-bg);
-  border: 1px solid var(--border);
-  color: var(--text-dim);
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.3s, border-color 0.3s, color 0.3s;
-  z-index: 10;
-}
-.top-btn svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.top-btn:hover { border-color: var(--accent); color: var(--text); }
-.theme-toggle { right: 1rem; }
-.notif-toggle { right: 3.8rem; }
-.notif-toggle.active { color: var(--yes-color); border-color: var(--yes-color); }
-
-main {
-  max-width: 480px;
-  width: 100%;
-  text-align: center;
-}
-
-h1 {
-  font-size: clamp(1.1rem, 4vw, 1.4rem);
-  font-weight: 400;
-  letter-spacing: 0.05em;
-  color: var(--text);
-  opacity: 0.7;
-  margin-bottom: 2rem;
-  text-transform: uppercase;
-}
-
-#answer {
-  font-size: clamp(2.5rem, 10vw, 6rem);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
-  margin-bottom: 0.5rem;
-  transition: color 0.4s, text-shadow 0.4s;
-}
-#answer.yes {
-  color: var(--no-color);
-  text-shadow: 0 0 40px var(--no-glow), 0 0 80px var(--no-glow);
-}
-#answer.no {
-  color: var(--yes-color);
-  text-shadow: 0 0 20px var(--yes-glow);
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-#answer.yes { animation: pulse 3s ease-in-out infinite; }
-
-#subtitle {
-  font-size: 1rem;
-  color: var(--text-dim);
-  margin-bottom: 1.8rem;
-}
-
-#countdown {
-  font-family: var(--font-mono);
-  font-size: clamp(1.5rem, 5vw, 2.2rem);
-  font-weight: 300;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.4rem;
-  color: var(--text);
-}
-#countdown-label {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 1.5rem;
-}
-
-/* Session progress (thin bar) */
-.progress-wrap {
-  width: 100%;
-  height: 5px;
-  background: var(--bar-bg);
-  border-radius: 3px;
-  overflow: hidden;
-  margin-bottom: 2rem;
-}
-.progress-bar {
-  height: 100%;
-  background: var(--bar-fill);
-  border-radius: 2px;
-  transition: width 1s linear;
-}
-
-/* Weekly timeline — horizontal rows */
-.weekly-timeline {
-  margin-bottom: 2.5rem;
-}
-.weekly-timeline-label {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  margin-bottom: 0.6rem;
-  text-align: left;
-}
-.wt-days {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 3px;
-}
-.wt-row {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  height: 18px;
-}
-.wt-row.is-today {
-  height: 26px;
-}
-.wt-day-label {
-  font-size: 0.6rem;
-  font-family: var(--font-mono);
-  color: var(--text-dim);
-  width: 2rem;
-  flex-shrink: 0;
-  text-align: right;
-  padding-right: 0.5rem;
-  letter-spacing: 0.03em;
-}
-.wt-row.is-today .wt-day-label {
-  color: var(--text);
-  font-weight: 700;
-  font-size: 0.65rem;
-}
-.wt-bar-wrap {
-  position: relative;
-  flex: 1;
-  height: 100%;
-  border-radius: 4px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: row;
-}
-.wt-row.is-today .wt-bar-wrap {
-  border-radius: 5px;
-}
-/* Segments */
-.wt-seg {
-  height: 100%;
-  cursor: pointer;
-}
-
-/* Floating tooltip */
-.wt-tooltip {
-  position: fixed;
-  pointer-events: none;
-  background: var(--bg-card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.3rem 0.6rem;
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  white-space: nowrap;
-  z-index: 100;
-  opacity: 0;
-  transition: opacity 0.12s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-}
-.wt-tooltip.visible { opacity: 1; }
-.wt-seg-peak {
-  background: var(--no-color);
-  opacity: 0.5;
-}
-.wt-seg-offpeak {
-  background: var(--bar-bg);
-  opacity: 1;
-}
-.wt-seg.past { opacity: 0.18; }
-.wt-seg.current { opacity: 0.7; }
-.wt-row.is-today .wt-seg.current { opacity: 0.85; }
-
-/* Now indicator — vertical line */
-.wt-now {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  background: var(--text);
-  z-index: 3;
-  pointer-events: none;
-  border-radius: 1px;
-}
-.wt-now::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 5px solid var(--text);
-}
-.wt-now::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-bottom: 5px solid var(--text);
-}
-
-/* Time scale */
-.wt-scale {
-  display: flex;
-  align-items: flex-end;
-  gap: 0;
-  height: 14px;
-  margin-bottom: 2px;
-}
-.wt-scale-gutter {
-  width: 2rem;
-  flex-shrink: 0;
-}
-.wt-scale-track {
-  position: relative;
-  flex: 1;
-  height: 100%;
-}
-.wt-tick {
-  position: absolute;
-  bottom: 0;
-  transform: translateX(-50%);
-  font-size: 0.55rem;
-  font-family: var(--font-mono);
-  color: var(--text-dim);
-  opacity: 0.6;
-  line-height: 1;
-  white-space: nowrap;
-}
-.wt-tick:first-child { transform: translateX(0); }
-.wt-tick:last-child { transform: translateX(-100%); }
-.wt-tick::after {
-  content: '';
-  position: absolute;
-  bottom: -3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1px;
-  height: 3px;
-  background: var(--text-dim);
-  opacity: 0.3;
-}
-.wt-tick:first-child::after { left: 0; transform: none; }
-.wt-tick:last-child::after { left: auto; right: 0; transform: none; }
-
-/* Legend */
-.wt-legend {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  margin-top: 0.5rem;
-  font-size: 0.65rem;
-  color: var(--text-dim);
-}
-.wt-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-.wt-legend-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-}
-.wt-legend-swatch.peak {
-  background: var(--no-color);
-  opacity: 0.5;
-}
-.wt-legend-swatch.offpeak {
-  background: var(--bar-bg);
-  opacity: 1;
-}
-
-.info-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.2rem 1.5rem;
-  text-align: left;
-  margin-bottom: 1rem;
-  transition: background 0.4s, border-color 0.4s;
-}
-.info-card h2 {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
-  margin-bottom: 0.8rem;
-}
-
-footer {
-  margin-top: 2rem;
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--text);
-  opacity: 0.6;
-}
-footer a {
-  color: var(--link);
-  text-decoration: none;
-  opacity: 1;
-}
-footer a:hover { text-decoration: underline; }
-
-/* Service status */
-.status-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
-  font-size: 0.82rem;
-}
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.status-dot.operational { background: var(--yes-color); }
-.status-dot.degraded_performance { background: var(--amber-color); }
-.status-dot.partial_outage, .status-dot.major_outage { background: var(--no-color); }
-.status-dot.under_maintenance { background: var(--text-dim); }
-.status-name { flex: 1; color: var(--text); opacity: 0.8; }
-.status-label { font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); }
-.status-incident {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border);
-  font-size: 0.78rem;
-  color: var(--amber-color);
-  line-height: 1.4;
-}
-.status-link {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.72rem;
-  color: var(--link);
-  text-decoration: none;
-}
-.status-link:hover { text-decoration: underline; }
-
-.notif-banner {
-  margin-top: 1.2rem;
-  padding: 0.6rem 1rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 0.6rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.82rem;
-  color: var(--text-dim);
-  animation: notif-fade-in 0.4s ease;
-}
-@keyframes notif-fade-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-.notif-banner svg { width: 18px; height: 18px; stroke: var(--text-dim); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
-.notif-banner-text { flex: 1; text-align: left; line-height: 1.4; }
-.notif-banner-btn {
-  background: var(--yes-color);
-  color: #fff;
-  border: none;
-  padding: 0.35rem 0.75rem;
-  border-radius: 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.2s;
-}
-.notif-banner-btn:hover { opacity: 0.85; }
-.notif-banner-close {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  padding: 0.2rem;
-  font-size: 1.1rem;
-  line-height: 1;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-.notif-banner-close:hover { opacity: 1; }
-
-.tz-info {
-  font-size: 0.8rem;
-  color: var(--text-dim);
-  margin-bottom: 1.5rem;
-  font-family: var(--font-mono);
-}
-</style>
-</head>
-<body data-theme="dark">
-
-<button class="top-btn notif-toggle" id="notifToggle" aria-label="Toggle notifications" title="Notifications off"></button>
-<button class="top-btn theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
-
-<main>
-  <h1>Claude Peak Hours</h1>
-
-  <div id="answer"></div>
-  <div id="subtitle"></div>
-
-  <div id="countdown"></div>
-  <div id="countdown-label"></div>
-
-  <div class="progress-wrap">
-    <div class="progress-bar" id="progressBar"></div>
-  </div>
-
-  <div class="notif-banner" id="notifBanner" style="display:none">
-    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-    <span class="notif-banner-text">Get notified when peak hours start or end</span>
-    <button class="notif-banner-btn" id="notifBannerBtn">Turn on notifications</button>
-    <button class="notif-banner-close" id="notifBannerClose" aria-label="Close">&times;</button>
-  </div>
-
-  <div class="weekly-timeline" id="weeklyTimeline">
-    <div class="weekly-timeline-label">Weekly overview</div>
-    <div class="wt-days" id="wtDays"></div>
-    <div class="wt-legend">
-      <span class="wt-legend-item"><span class="wt-legend-swatch peak"></span>peak</span>
-      <span class="wt-legend-item"><span class="wt-legend-swatch offpeak"></span>off-peak</span>
-    </div>
-  </div>
-
-  <div class="tz-info" id="tzInfo"></div>
-
-  <div class="info-card" id="statusCard" style="display:none">
-    <h2>Service status</h2>
-    <div id="statusRows"></div>
-    <a class="status-link" href="https://status.claude.com" target="_blank" rel="noopener">status.claude.com &rarr;</a>
-  </div>
-
-
-  <footer>
-    <p><a href="https://support.claude.com" target="_blank" rel="noopener">support.claude.com</a></p>
-    <p style="margin-top: 0.3rem;">Not affiliated with Anthropic</p>
-  </footer>
-</main>
-
-<script>
-(() => {
-  // === Peak hours config (UTC) ===
-  // Mon–Fri 13:00–19:00 UTC = 1–7 PM GMT = 5–11 AM PST = 6 AM–noon PDT
-  const PEAK_START_UTC = 13;
-  const PEAK_END_UTC   = 19;
-
-  // === Theme ===
-  const themeBtn = document.getElementById('themeToggle');
-  const body = document.body;
-
-  function applyTheme(theme) {
-    body.setAttribute('data-theme', theme);
-    themeBtn.innerHTML = theme === 'dark'
-      ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
-      : '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
-  }
-
-  function osTheme() {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'anthropic';
-  }
-
-  // null = follow OS, 'dark'/'anthropic' = manual override
-  let userPref = localStorage.getItem('claude-promo-theme');
-  applyTheme(userPref || osTheme());
-
-  // Follow OS changes when no manual override
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if (!userPref) applyTheme(osTheme());
-  });
-
-  themeBtn.addEventListener('click', () => {
-    const next = body.getAttribute('data-theme') === 'dark' ? 'anthropic' : 'dark';
-    // If clicking back to what OS would give, clear override
-    if (next === osTheme()) {
-      userPref = null;
-      localStorage.removeItem('claude-promo-theme');
-    } else {
-      userPref = next;
-      localStorage.setItem('claude-promo-theme', next);
-    }
-    applyTheme(next);
-  });
-
-  // === Status logic ===
-  function getPeakStatus(now) {
-    const utcDay  = now.getUTCDay();   // 0=Sun, 6=Sat
-    const utcHour = now.getUTCHours();
-    if (utcDay >= 1 && utcDay <= 5 && utcHour >= PEAK_START_UTC && utcHour < PEAK_END_UTC)
-      return 'PEAK';
-    return 'OFF_PEAK';
-  }
-
-  // === Next transition time ===
-  function getNextTransition(now, status) {
-    const d = new Date(now);
-
-    if (status === 'PEAK') {
-      const off = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_END_UTC, 0, 0);
-      return { time: off, label: 'Off-peak in' };
-    }
-
-    // OFF_PEAK: find next weekday peak start
-    const utcDay  = d.getUTCDay();
-    const utcHour = d.getUTCHours();
-
-    // Weekday before today's peak
-    if (utcDay >= 1 && utcDay <= 5 && utcHour < PEAK_START_UTC) {
-      const target = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), PEAK_START_UTC, 0, 0);
-      return { time: target, label: 'Peak starts in' };
-    }
-
-    // After today's peak (or weekend): find next weekday
-    let daysAhead = 1;
-    while (daysAhead <= 7) {
-      const candidate = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysAhead));
-      if (candidate.getUTCDay() >= 1 && candidate.getUTCDay() <= 5) {
-        const target = Date.UTC(candidate.getUTCFullYear(), candidate.getUTCMonth(), candidate.getUTCDate(), PEAK_START_UTC, 0, 0);
-        return { time: target, label: 'Peak starts in' };
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      if (location.hostname === "claude-promo-time.pages.dev") {
+        location.replace(
+          "https://claude-peak-time.pages.dev" +
+            location.pathname +
+            location.search +
+            location.hash,
+        );
       }
-      daysAhead++;
-    }
-
-    return null;
-  }
-
-  // === Current session boundaries for progress bar ===
-  function getSessionBounds(now, status) {
-    const d = new Date(now);
-    const yy = d.getUTCFullYear(), mo = d.getUTCMonth(), dd = d.getUTCDate();
-    const utcDay = d.getUTCDay(), utcHour = d.getUTCHours();
-
-    if (status === 'PEAK') {
-      return {
-        start: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0),
-        end:   Date.UTC(yy, mo, dd, PEAK_END_UTC,   0, 0)
-      };
-    }
-
-    // OFF_PEAK on a weekday
-    if (utcDay >= 1 && utcDay <= 5) {
-      if (utcHour < PEAK_START_UTC) {
-        // Before today's peak: prev day's 19:00 → today 13:00
-        const prevDay = new Date(Date.UTC(yy, mo, dd - 1));
-        const pvDay = prevDay.getUTCDay();
-        let start;
-        if (pvDay >= 1 && pvDay <= 5) {
-          start = Date.UTC(prevDay.getUTCFullYear(), prevDay.getUTCMonth(), prevDay.getUTCDate(), PEAK_END_UTC, 0, 0);
-        } else {
-          // Yesterday was Sunday → back to Friday 19:00
-          const daysToFri = pvDay === 0 ? 2 : 1; // Sun→-2=Fri, Sat→-1=Fri
-          const fri = new Date(Date.UTC(prevDay.getUTCFullYear(), prevDay.getUTCMonth(), prevDay.getUTCDate() - daysToFri));
-          start = Date.UTC(fri.getUTCFullYear(), fri.getUTCMonth(), fri.getUTCDate(), PEAK_END_UTC, 0, 0);
-        }
-        return { start, end: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0) };
-      } else {
-        // After today's peak: today 19:00 → next weekday 13:00
-        const start = Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0);
-        const tomorrow = new Date(Date.UTC(yy, mo, dd + 1));
-        const tDay = tomorrow.getUTCDay();
-        let end;
-        if (tDay >= 1 && tDay <= 5) {
-          end = Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate(), PEAK_START_UTC, 0, 0);
-        } else {
-          // Tomorrow is Sat (+2=Mon) or Sun (+1=Mon)
-          const daysToMon = tDay === 6 ? 2 : 1;
-          const mon = new Date(Date.UTC(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth(), tomorrow.getUTCDate() + daysToMon));
-          end = Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate(), PEAK_START_UTC, 0, 0);
-        }
-        return { start, end };
+    </script>
+    <title>Is it Claude Peak Time?</title>
+    <meta
+      name="description"
+      content="Check if Claude's session limits are active right now. Peak hours are Mon–Fri 13:00–19:00 UTC (5–11 AM PST / 6 AM–noon PDT)."
+    />
+    <meta property="og:title" content="Is it Claude Peak Time?" />
+    <meta
+      property="og:description"
+      content="Find out if Claude peak hours (session limits) are active right now in your local time. Weekdays 13:00–19:00 UTC."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <style>
+      *,
+      *::before,
+      *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
-    }
 
-    // Weekend: Fri 19:00 → Mon 13:00
-    const daysToFri = utcDay === 6 ? 1 : 2; // Sat→-1=Fri, Sun→-2=Fri
-    const fri = new Date(Date.UTC(yy, mo, dd - daysToFri));
-    const start = Date.UTC(fri.getUTCFullYear(), fri.getUTCMonth(), fri.getUTCDate(), PEAK_END_UTC, 0, 0);
-    const daysToMon = utcDay === 6 ? 2 : 1; // Sat→+2=Mon, Sun→+1=Mon
-    const mon = new Date(Date.UTC(yy, mo, dd + daysToMon));
-    const end = Date.UTC(mon.getUTCFullYear(), mon.getUTCMonth(), mon.getUTCDate(), PEAK_START_UTC, 0, 0);
-    return { start, end };
-  }
+      :root {
+        --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+        --font-mono:
+          "SF Mono", "Cascadia Code", "Fira Code", "Consolas", monospace;
+      }
 
-  // === Format duration ===
-  function formatDuration(ms) {
-    if (ms <= 0) return '0:00:00';
-    const totalSec = Math.floor(ms / 1000);
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    const s = totalSec % 60;
-    return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
+      /* Theme: Dark Minimal */
+      [data-theme="dark"] {
+        --bg: #0c0c0c;
+        --bg-card: #161616;
+        --text: #ebebeb;
+        --text-dim: #9a9a9a;
+        --yes-color: #34d399;
+        --yes-glow: rgba(52, 211, 153, 0.25);
+        --no-color: #f87171;
+        --no-glow: rgba(248, 113, 113, 0.15);
+        --ended-color: #e0b590;
+        --amber-color: #fbbf24;
+        --accent: #e0b590;
+        --bar-bg: #282828;
+        --bar-fill: #34d399;
+        --border: #2a2a2a;
+        --toggle-bg: #1e1e1e;
+        --link: #e0b590;
+      }
 
-  // === Format time in local tz ===
-  function formatLocalTime(hour, minute) {
-    const d = new Date();
-    d.setUTCHours(hour, minute || 0, 0, 0);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-  }
+      /* Theme: Anthropic Brand */
+      [data-theme="anthropic"] {
+        --bg: #faf6f1;
+        --bg-card: #fff;
+        --text: #1a1a1a;
+        --text-dim: #8a7a6a;
+        --yes-color: #2e7d32;
+        --yes-glow: rgba(46, 125, 50, 0.12);
+        --no-color: #c62828;
+        --no-glow: rgba(198, 40, 40, 0.08);
+        --ended-color: #c4956a;
+        --amber-color: #e65100;
+        --accent: #c4956a;
+        --bar-bg: #ede7df;
+        --bar-fill: #c4956a;
+        --border: #e0d6ca;
+        --toggle-bg: #ede7df;
+        --link: #9a6b42;
+      }
 
-  // === Format timestamp as "Day HH:MM" in local time ===
-  function formatDateTimeShort(ts) {
-    const d = new Date(ts);
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const h = String(d.getHours()).padStart(2, '0');
-    const m = String(d.getMinutes()).padStart(2, '0');
-    return `${days[d.getDay()]} ${h}:${m}`;
-  }
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+        transition:
+          background 0.4s,
+          color 0.4s;
+      }
 
-  // === Get timezone name ===
-  function getTimezoneName() {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      return tz === 'Europe/Kiev' ? 'Europe/Kyiv' : tz;
-    } catch {
-      return 'Local';
-    }
-  }
+      .top-btn {
+        position: fixed;
+        top: 1rem;
+        background: var(--toggle-bg);
+        border: 1px solid var(--border);
+        color: var(--text-dim);
+        width: 2.2rem;
+        height: 2.2rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.3s,
+          border-color 0.3s,
+          color 0.3s;
+        z-index: 10;
+      }
+      .top-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .top-btn:hover {
+        border-color: var(--accent);
+        color: var(--text);
+      }
+      .theme-toggle {
+        right: 1rem;
+      }
+      .notif-toggle {
+        right: 3.8rem;
+      }
+      .notif-toggle.active {
+        color: var(--yes-color);
+        border-color: var(--yes-color);
+      }
 
-  // === Build weekly timeline ===
-  // Compute segments for a local day (local 00:00–24:00).
-  // Returns array of { type: 'peak'|'offpeak', startMs, endMs } relative to local midnight.
-  function getLocalDaySegments(localMidnightTs) {
-    const DAY_MS = 86400000;
-    const raw = [];
-    let cursor = localMidnightTs;
-    const end = localMidnightTs + DAY_MS;
+      main {
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
 
-    while (cursor < end) {
-      const d = new Date(cursor);
-      const utcDay = d.getUTCDay();
-      const isWknd = utcDay === 0 || utcDay === 6;
+      h1 {
+        font-size: clamp(1.1rem, 4vw, 1.4rem);
+        font-weight: 400;
+        letter-spacing: 0.05em;
+        color: var(--text);
+        opacity: 0.7;
+        margin-bottom: 2rem;
+        text-transform: uppercase;
+      }
 
-      let type, segEnd;
-      if (isWknd) {
-        type = 'offpeak';
-        const nextUtcMid = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1);
-        segEnd = Math.min(nextUtcMid, end);
-      } else {
-        const utcDayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-        const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
-        const peakEnd   = utcDayStart + PEAK_END_UTC   * 3600000;
-        const nextUtcMid = utcDayStart + DAY_MS;
-
-        if (cursor < peakStart) {
-          type = 'offpeak';
-          segEnd = Math.min(peakStart, end);
-        } else if (cursor < peakEnd) {
-          type = 'peak';
-          segEnd = Math.min(peakEnd, end);
-        } else {
-          type = 'offpeak';
-          segEnd = Math.min(nextUtcMid, end);
+      #answer {
+        font-size: clamp(2.5rem, 10vw, 6rem);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        transition:
+          color 0.4s,
+          text-shadow 0.4s;
+      }
+      #answer.yes {
+        color: var(--no-color);
+        text-shadow:
+          0 0 40px var(--no-glow),
+          0 0 80px var(--no-glow);
+      }
+      #answer.no {
+        color: var(--yes-color);
+        text-shadow: 0 0 20px var(--yes-glow);
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.7;
         }
       }
-
-      raw.push({ type, startMs: cursor - localMidnightTs, endMs: segEnd - localMidnightTs });
-      cursor = segEnd;
-    }
-
-    // Merge adjacent segments of same type
-    const merged = [raw[0]];
-    for (let i = 1; i < raw.length; i++) {
-      const last = merged[merged.length - 1];
-      if (raw[i].type === last.type) {
-        last.endMs = raw[i].endMs;
-      } else {
-        merged.push(raw[i]);
+      #answer.yes {
+        animation: pulse 3s ease-in-out infinite;
       }
-    }
-    return merged;
-  }
 
-  function buildWeeklyTimeline() {
-    const container = document.getElementById('wtDays');
-    container.innerHTML = '';
-    const now = new Date();
-    const nowTs = now.getTime();
-    const DAY_MS = 86400000;
+      #subtitle {
+        font-size: 1rem;
+        color: var(--text-dim);
+        margin-bottom: 1.8rem;
+      }
 
-    // Time scale row — local 00:00–24:00
-    const scaleRow = document.createElement('div');
-    scaleRow.className = 'wt-scale';
-    const scaleGutter = document.createElement('div');
-    scaleGutter.className = 'wt-scale-gutter';
-    scaleRow.appendChild(scaleGutter);
-    const scaleTrack = document.createElement('div');
-    scaleTrack.className = 'wt-scale-track';
-    for (const h of [0, 6, 12, 18, 24]) {
-      const tick = document.createElement('span');
-      tick.className = 'wt-tick';
-      tick.style.left = ((h / 24) * 100) + '%';
-      tick.textContent = String(h).padStart(2, '0') + ':00';
-      scaleTrack.appendChild(tick);
-    }
-    scaleRow.appendChild(scaleTrack);
-    container.appendChild(scaleRow);
+      #countdown {
+        font-family: var(--font-mono);
+        font-size: clamp(1.5rem, 5vw, 2.2rem);
+        font-weight: 300;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.4rem;
+        color: var(--text);
+      }
+      #countdown-label {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 1.5rem;
+      }
 
-    // Find local Monday of this week
-    const localDay = now.getDay();
-    const daysFromMon = localDay === 0 ? 6 : localDay - 1;
-    const monLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysFromMon);
-    const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+      /* Session progress (thin bar) */
+      .progress-wrap {
+        width: 100%;
+        height: 5px;
+        background: var(--bar-bg);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 2rem;
+      }
+      .progress-bar {
+        height: 100%;
+        background: var(--bar-fill);
+        border-radius: 2px;
+        transition: width 1s linear;
+      }
 
-    // Pre-compute segments for boundary days (day before first & day after last)
-    const allSegs = [];
-    for (let i = -1; i <= 7; i++) {
-      const d = new Date(monLocal.getFullYear(), monLocal.getMonth(), monLocal.getDate() + i);
-      allSegs.push(getLocalDaySegments(d.getTime()));
-    }
-    // allSegs index: day i => allSegs[i + 1]
+      /* Weekly timeline — horizontal rows */
+      .weekly-timeline {
+        margin-bottom: 2.5rem;
+      }
+      .weekly-timeline-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-dim);
+        margin-bottom: 0.6rem;
+        text-align: left;
+      }
+      .wt-days {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        gap: 3px;
+      }
+      .wt-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        height: 18px;
+      }
+      .wt-row.is-today {
+        height: 26px;
+      }
+      .wt-day-label {
+        font-size: 0.6rem;
+        font-family: var(--font-mono);
+        color: var(--text-dim);
+        width: 2rem;
+        flex-shrink: 0;
+        text-align: right;
+        padding-right: 0.5rem;
+        letter-spacing: 0.03em;
+      }
+      .wt-row.is-today .wt-day-label {
+        color: var(--text);
+        font-weight: 700;
+        font-size: 0.65rem;
+      }
+      .wt-bar-wrap {
+        position: relative;
+        flex: 1;
+        height: 100%;
+        border-radius: 4px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: row;
+      }
+      .wt-row.is-today .wt-bar-wrap {
+        border-radius: 5px;
+      }
+      /* Segments */
+      .wt-seg {
+        height: 100%;
+        cursor: pointer;
+      }
 
-    for (let i = 0; i < 7; i++) {
-      const dayLocal = new Date(monLocal.getFullYear(), monLocal.getMonth(), monLocal.getDate() + i);
-      const dayStartTs = dayLocal.getTime();
-      const dayEndTs = dayStartTs + DAY_MS;
-      const isToday = (nowTs >= dayStartTs && nowTs < dayEndTs);
+      /* Floating tooltip */
+      .wt-tooltip {
+        position: fixed;
+        pointer-events: none;
+        background: var(--bg-card);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+        font-family: var(--font-mono);
+        white-space: nowrap;
+        z-index: 100;
+        opacity: 0;
+        transition: opacity 0.12s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+      }
+      .wt-tooltip.visible {
+        opacity: 1;
+      }
+      .wt-seg-peak {
+        background: var(--no-color);
+        opacity: 0.5;
+      }
+      .wt-seg-offpeak {
+        background: var(--bar-bg);
+        opacity: 1;
+      }
+      .wt-seg.past {
+        opacity: 0.18;
+      }
+      .wt-seg.current {
+        opacity: 0.7;
+      }
+      .wt-row.is-today .wt-seg.current {
+        opacity: 0.85;
+      }
 
-      const row = document.createElement('div');
-      row.className = 'wt-row' + (isToday ? ' is-today' : '');
+      /* Now indicator — vertical line */
+      .wt-now {
+        position: absolute;
+        top: -3px;
+        bottom: -3px;
+        width: 2px;
+        background: var(--text);
+        z-index: 3;
+        pointer-events: none;
+        border-radius: 1px;
+      }
+      .wt-now::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid var(--text);
+      }
+      .wt-now::after {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-bottom: 5px solid var(--text);
+      }
 
-      const label = document.createElement('div');
-      label.className = 'wt-day-label';
-      label.textContent = dayLabels[i];
-      row.appendChild(label);
+      /* Time scale */
+      .wt-scale {
+        display: flex;
+        align-items: flex-end;
+        gap: 0;
+        height: 14px;
+        margin-bottom: 2px;
+      }
+      .wt-scale-gutter {
+        width: 2rem;
+        flex-shrink: 0;
+      }
+      .wt-scale-track {
+        position: relative;
+        flex: 1;
+        height: 100%;
+      }
+      .wt-tick {
+        position: absolute;
+        bottom: 0;
+        transform: translateX(-50%);
+        font-size: 0.55rem;
+        font-family: var(--font-mono);
+        color: var(--text-dim);
+        opacity: 0.6;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .wt-tick:first-child {
+        transform: translateX(0);
+      }
+      .wt-tick:last-child {
+        transform: translateX(-100%);
+      }
+      .wt-tick::after {
+        content: "";
+        position: absolute;
+        bottom: -3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 1px;
+        height: 3px;
+        background: var(--text-dim);
+        opacity: 0.3;
+      }
+      .wt-tick:first-child::after {
+        left: 0;
+        transform: none;
+      }
+      .wt-tick:last-child::after {
+        left: auto;
+        right: 0;
+        transform: none;
+      }
 
-      const barWrap = document.createElement('div');
-      barWrap.className = 'wt-bar-wrap';
+      /* Legend */
+      .wt-legend {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 0.5rem;
+        font-size: 0.65rem;
+        color: var(--text-dim);
+      }
+      .wt-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+      .wt-legend-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+      }
+      .wt-legend-swatch.peak {
+        background: var(--no-color);
+        opacity: 0.5;
+      }
+      .wt-legend-swatch.offpeak {
+        background: var(--bar-bg);
+        opacity: 1;
+      }
 
-      const segments = allSegs[i + 1];
-      const prevSegs = allSegs[i];
-      const nextSegs = allSegs[i + 2];
+      .info-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.2rem 1.5rem;
+        text-align: left;
+        margin-bottom: 1rem;
+        transition:
+          background 0.4s,
+          border-color 0.4s;
+      }
+      .info-card h2 {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--text-dim);
+        margin-bottom: 0.8rem;
+      }
 
-      for (const s of segments) {
-        const seg = document.createElement('div');
-        seg.className = `wt-seg wt-seg-${s.type}`;
-        seg.style.flex = (s.endMs - s.startMs).toString();
+      footer {
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: var(--text);
+        opacity: 0.6;
+      }
+      footer a {
+        color: var(--link);
+        text-decoration: none;
+        opacity: 1;
+      }
+      footer a:hover {
+        text-decoration: underline;
+      }
 
-        // Resolve true start/end for segments split at midnight
-        let trueStart = formatMsAsTime(s.startMs);
-        let trueEnd = formatMsAsTime(s.endMs);
-        if (s.startMs === 0 && s.endMs < DAY_MS && prevSegs.length > 0) {
-          const last = prevSegs[prevSegs.length - 1];
-          if (last.type === s.type && last.endMs === DAY_MS) {
-            trueStart = formatMsAsTime(last.startMs);
+      /* Service status */
+      .status-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0;
+        font-size: 0.82rem;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .status-dot.operational {
+        background: var(--yes-color);
+      }
+      .status-dot.degraded_performance {
+        background: var(--amber-color);
+      }
+      .status-dot.partial_outage,
+      .status-dot.major_outage {
+        background: var(--no-color);
+      }
+      .status-dot.under_maintenance {
+        background: var(--text-dim);
+      }
+      .status-name {
+        flex: 1;
+        color: var(--text);
+        opacity: 0.8;
+      }
+      .status-label {
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+      }
+      .status-incident {
+        margin-top: 0.5rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.78rem;
+        color: var(--amber-color);
+        line-height: 1.4;
+      }
+      .status-link {
+        display: block;
+        margin-top: 0.5rem;
+        font-size: 0.72rem;
+        color: var(--link);
+        text-decoration: none;
+      }
+      .status-link:hover {
+        text-decoration: underline;
+      }
+
+      .notif-banner {
+        margin-top: 1.2rem;
+        padding: 0.6rem 1rem;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 0.6rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.82rem;
+        color: var(--text-dim);
+        animation: notif-fade-in 0.4s ease;
+      }
+      @keyframes notif-fade-in {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .notif-banner svg {
+        width: 18px;
+        height: 18px;
+        stroke: var(--text-dim);
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        flex-shrink: 0;
+      }
+      .notif-banner-text {
+        flex: 1;
+        text-align: left;
+        line-height: 1.4;
+      }
+      .notif-banner-btn {
+        background: var(--yes-color);
+        color: #fff;
+        border: none;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.4rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: opacity 0.2s;
+      }
+      .notif-banner-btn:hover {
+        opacity: 0.85;
+      }
+      .notif-banner-close {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        padding: 0.2rem;
+        font-size: 1.1rem;
+        line-height: 1;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      .notif-banner-close:hover {
+        opacity: 1;
+      }
+
+      .tz-info {
+        font-size: 0.8rem;
+        color: var(--text-dim);
+        margin-bottom: 1.5rem;
+        font-family: var(--font-mono);
+      }
+
+      /* EthicalAds */
+      .ea-wrap {
+        margin-bottom: 1.5rem;
+      }
+      .ea-wrap .ethical-ads,
+      .ea-wrap [data-ea-publisher] {
+        display: block;
+        max-width: 100%;
+      }
+
+      /* Ko-fi link */
+      .kofi-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: var(--link);
+        text-decoration: none;
+        font-size: 0.75rem;
+        opacity: 0.85;
+        transition: opacity 0.2s;
+      }
+      .kofi-link:hover {
+        opacity: 1;
+        text-decoration: underline;
+      }
+      .kofi-link svg {
+        width: 13px;
+        height: 13px;
+        stroke: currentColor;
+        fill: none;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body data-theme="dark">
+    <button
+      class="top-btn notif-toggle"
+      id="notifToggle"
+      aria-label="Toggle notifications"
+      title="Notifications off"
+    ></button>
+    <button
+      class="top-btn theme-toggle"
+      id="themeToggle"
+      aria-label="Toggle theme"
+    ></button>
+
+    <main>
+      <h1>Claude Peak Hours</h1>
+
+      <div id="answer"></div>
+      <div id="subtitle"></div>
+
+      <div id="countdown"></div>
+      <div id="countdown-label"></div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+
+      <div class="notif-banner" id="notifBanner" style="display: none">
+        <svg viewBox="0 0 24 24">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        <span class="notif-banner-text"
+          >Get notified when peak hours start or end</span
+        >
+        <button class="notif-banner-btn" id="notifBannerBtn">
+          Turn on notifications
+        </button>
+        <button
+          class="notif-banner-close"
+          id="notifBannerClose"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div class="weekly-timeline" id="weeklyTimeline">
+        <div class="weekly-timeline-label">Weekly overview</div>
+        <div class="wt-days" id="wtDays"></div>
+        <div class="wt-legend">
+          <span class="wt-legend-item"
+            ><span class="wt-legend-swatch peak"></span>peak</span
+          >
+          <span class="wt-legend-item"
+            ><span class="wt-legend-swatch offpeak"></span>off-peak</span
+          >
+        </div>
+      </div>
+
+      <div class="tz-info" id="tzInfo"></div>
+
+      <div class="info-card" id="statusCard" style="display: none">
+        <h2>Service status</h2>
+        <div id="statusRows"></div>
+        <a
+          class="status-link"
+          href="https://status.claude.com"
+          target="_blank"
+          rel="noopener"
+          >status.claude.com &rarr;</a
+        >
+      </div>
+
+      <!-- EthicalAds (後で有効化: YOUR-PUBLISHER-ID を ethicalads.io の Publisher ID に変更)
+      <div class="ea-wrap">
+        <div data-ea-publisher="YOUR-PUBLISHER-ID" data-ea-type="image"></div>
+      </div>
+      -->
+
+      <footer>
+        <p>
+          <a href="https://support.claude.com" target="_blank" rel="noopener"
+            >support.claude.com</a
+          >
+        </p>
+        <p style="margin-top: 0.3rem">Not affiliated with Anthropic</p>
+        <p style="margin-top: 0.6rem">
+          <!-- Ko-fi: Replace YOUR-KOFI-USERNAME with your Ko-fi username -->
+          <a
+            class="kofi-link"
+            href="https://ko-fi.com/studio3333"
+            target="_blank"
+            rel="noopener"
+          >
+            <svg viewBox="0 0 24 24">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+              <line x1="6" y1="1" x2="6" y2="4" />
+              <line x1="10" y1="1" x2="10" y2="4" />
+              <line x1="14" y1="1" x2="14" y2="4" />
+            </svg>
+            Support this project
+          </a>
+        </p>
+      </footer>
+    </main>
+
+    <script>
+      (() => {
+        // === Peak hours config (UTC) ===
+        // Mon–Fri 13:00–19:00 UTC = 1–7 PM GMT = 5–11 AM PST = 6 AM–noon PDT
+        const PEAK_START_UTC = 13;
+        const PEAK_END_UTC = 19;
+
+        // === Theme ===
+        const themeBtn = document.getElementById("themeToggle");
+        const body = document.body;
+
+        function applyTheme(theme) {
+          body.setAttribute("data-theme", theme);
+          themeBtn.innerHTML =
+            theme === "dark"
+              ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+              : '<svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        }
+
+        function osTheme() {
+          return window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "anthropic";
+        }
+
+        // null = follow OS, 'dark'/'anthropic' = manual override
+        let userPref = localStorage.getItem("claude-promo-theme");
+        applyTheme(userPref || osTheme());
+
+        // Follow OS changes when no manual override
+        window
+          .matchMedia("(prefers-color-scheme: dark)")
+          .addEventListener("change", () => {
+            if (!userPref) applyTheme(osTheme());
+          });
+
+        themeBtn.addEventListener("click", () => {
+          const next =
+            body.getAttribute("data-theme") === "dark" ? "anthropic" : "dark";
+          // If clicking back to what OS would give, clear override
+          if (next === osTheme()) {
+            userPref = null;
+            localStorage.removeItem("claude-promo-theme");
+          } else {
+            userPref = next;
+            localStorage.setItem("claude-promo-theme", next);
+          }
+          applyTheme(next);
+        });
+
+        // === Status logic ===
+        function getPeakStatus(now) {
+          const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
+          const utcHour = now.getUTCHours();
+          if (
+            utcDay >= 1 &&
+            utcDay <= 5 &&
+            utcHour >= PEAK_START_UTC &&
+            utcHour < PEAK_END_UTC
+          )
+            return "PEAK";
+          return "OFF_PEAK";
+        }
+
+        // === Next transition time ===
+        function getNextTransition(now, status) {
+          const d = new Date(now);
+
+          if (status === "PEAK") {
+            const off = Date.UTC(
+              d.getUTCFullYear(),
+              d.getUTCMonth(),
+              d.getUTCDate(),
+              PEAK_END_UTC,
+              0,
+              0,
+            );
+            return { time: off, label: "Off-peak in" };
+          }
+
+          // OFF_PEAK: find next weekday peak start
+          const utcDay = d.getUTCDay();
+          const utcHour = d.getUTCHours();
+
+          // Weekday before today's peak
+          if (utcDay >= 1 && utcDay <= 5 && utcHour < PEAK_START_UTC) {
+            const target = Date.UTC(
+              d.getUTCFullYear(),
+              d.getUTCMonth(),
+              d.getUTCDate(),
+              PEAK_START_UTC,
+              0,
+              0,
+            );
+            return { time: target, label: "Peak starts in" };
+          }
+
+          // After today's peak (or weekend): find next weekday
+          let daysAhead = 1;
+          while (daysAhead <= 7) {
+            const candidate = new Date(
+              Date.UTC(
+                d.getUTCFullYear(),
+                d.getUTCMonth(),
+                d.getUTCDate() + daysAhead,
+              ),
+            );
+            if (candidate.getUTCDay() >= 1 && candidate.getUTCDay() <= 5) {
+              const target = Date.UTC(
+                candidate.getUTCFullYear(),
+                candidate.getUTCMonth(),
+                candidate.getUTCDate(),
+                PEAK_START_UTC,
+                0,
+                0,
+              );
+              return { time: target, label: "Peak starts in" };
+            }
+            daysAhead++;
+          }
+
+          return null;
+        }
+
+        // === Current session boundaries for progress bar ===
+        function getSessionBounds(now, status) {
+          const d = new Date(now);
+          const yy = d.getUTCFullYear(),
+            mo = d.getUTCMonth(),
+            dd = d.getUTCDate();
+          const utcDay = d.getUTCDay(),
+            utcHour = d.getUTCHours();
+
+          if (status === "PEAK") {
+            return {
+              start: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0),
+              end: Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0),
+            };
+          }
+
+          // OFF_PEAK on a weekday
+          if (utcDay >= 1 && utcDay <= 5) {
+            if (utcHour < PEAK_START_UTC) {
+              // Before today's peak: prev day's 19:00 → today 13:00
+              const prevDay = new Date(Date.UTC(yy, mo, dd - 1));
+              const pvDay = prevDay.getUTCDay();
+              let start;
+              if (pvDay >= 1 && pvDay <= 5) {
+                start = Date.UTC(
+                  prevDay.getUTCFullYear(),
+                  prevDay.getUTCMonth(),
+                  prevDay.getUTCDate(),
+                  PEAK_END_UTC,
+                  0,
+                  0,
+                );
+              } else {
+                // Yesterday was Sunday → back to Friday 19:00
+                const daysToFri = pvDay === 0 ? 2 : 1; // Sun→-2=Fri, Sat→-1=Fri
+                const fri = new Date(
+                  Date.UTC(
+                    prevDay.getUTCFullYear(),
+                    prevDay.getUTCMonth(),
+                    prevDay.getUTCDate() - daysToFri,
+                  ),
+                );
+                start = Date.UTC(
+                  fri.getUTCFullYear(),
+                  fri.getUTCMonth(),
+                  fri.getUTCDate(),
+                  PEAK_END_UTC,
+                  0,
+                  0,
+                );
+              }
+              return { start, end: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0) };
+            } else {
+              // After today's peak: today 19:00 → next weekday 13:00
+              const start = Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0);
+              const tomorrow = new Date(Date.UTC(yy, mo, dd + 1));
+              const tDay = tomorrow.getUTCDay();
+              let end;
+              if (tDay >= 1 && tDay <= 5) {
+                end = Date.UTC(
+                  tomorrow.getUTCFullYear(),
+                  tomorrow.getUTCMonth(),
+                  tomorrow.getUTCDate(),
+                  PEAK_START_UTC,
+                  0,
+                  0,
+                );
+              } else {
+                // Tomorrow is Sat (+2=Mon) or Sun (+1=Mon)
+                const daysToMon = tDay === 6 ? 2 : 1;
+                const mon = new Date(
+                  Date.UTC(
+                    tomorrow.getUTCFullYear(),
+                    tomorrow.getUTCMonth(),
+                    tomorrow.getUTCDate() + daysToMon,
+                  ),
+                );
+                end = Date.UTC(
+                  mon.getUTCFullYear(),
+                  mon.getUTCMonth(),
+                  mon.getUTCDate(),
+                  PEAK_START_UTC,
+                  0,
+                  0,
+                );
+              }
+              return { start, end };
+            }
+          }
+
+          // Weekend: Fri 19:00 → Mon 13:00
+          const daysToFri = utcDay === 6 ? 1 : 2; // Sat→-1=Fri, Sun→-2=Fri
+          const fri = new Date(Date.UTC(yy, mo, dd - daysToFri));
+          const start = Date.UTC(
+            fri.getUTCFullYear(),
+            fri.getUTCMonth(),
+            fri.getUTCDate(),
+            PEAK_END_UTC,
+            0,
+            0,
+          );
+          const daysToMon = utcDay === 6 ? 2 : 1; // Sat→+2=Mon, Sun→+1=Mon
+          const mon = new Date(Date.UTC(yy, mo, dd + daysToMon));
+          const end = Date.UTC(
+            mon.getUTCFullYear(),
+            mon.getUTCMonth(),
+            mon.getUTCDate(),
+            PEAK_START_UTC,
+            0,
+            0,
+          );
+          return { start, end };
+        }
+
+        // === Format duration ===
+        function formatDuration(ms) {
+          if (ms <= 0) return "0:00:00";
+          const totalSec = Math.floor(ms / 1000);
+          const h = Math.floor(totalSec / 3600);
+          const m = Math.floor((totalSec % 3600) / 60);
+          const s = totalSec % 60;
+          return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+        }
+
+        // === Format time in local tz ===
+        function formatLocalTime(hour, minute) {
+          const d = new Date();
+          d.setUTCHours(hour, minute || 0, 0, 0);
+          return d.toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+        }
+
+        // === Format timestamp as "Day HH:MM" in local time ===
+        function formatDateTimeShort(ts) {
+          const d = new Date(ts);
+          const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          const h = String(d.getHours()).padStart(2, "0");
+          const m = String(d.getMinutes()).padStart(2, "0");
+          return `${days[d.getDay()]} ${h}:${m}`;
+        }
+
+        // === Get timezone name ===
+        function getTimezoneName() {
+          try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            return tz === "Europe/Kiev" ? "Europe/Kyiv" : tz;
+          } catch {
+            return "Local";
           }
         }
-        if (s.endMs === DAY_MS && s.startMs > 0 && nextSegs.length > 0) {
-          const first = nextSegs[0];
-          if (first.type === s.type && first.startMs === 0) {
-            trueEnd = formatMsAsTime(first.endMs);
+
+        // === Build weekly timeline ===
+        // Compute segments for a local day (local 00:00–24:00).
+        // Returns array of { type: 'peak'|'offpeak', startMs, endMs } relative to local midnight.
+        function getLocalDaySegments(localMidnightTs) {
+          const DAY_MS = 86400000;
+          const raw = [];
+          let cursor = localMidnightTs;
+          const end = localMidnightTs + DAY_MS;
+
+          while (cursor < end) {
+            const d = new Date(cursor);
+            const utcDay = d.getUTCDay();
+            const isWknd = utcDay === 0 || utcDay === 6;
+
+            let type, segEnd;
+            if (isWknd) {
+              type = "offpeak";
+              const nextUtcMid = Date.UTC(
+                d.getUTCFullYear(),
+                d.getUTCMonth(),
+                d.getUTCDate() + 1,
+              );
+              segEnd = Math.min(nextUtcMid, end);
+            } else {
+              const utcDayStart = Date.UTC(
+                d.getUTCFullYear(),
+                d.getUTCMonth(),
+                d.getUTCDate(),
+              );
+              const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
+              const peakEnd = utcDayStart + PEAK_END_UTC * 3600000;
+              const nextUtcMid = utcDayStart + DAY_MS;
+
+              if (cursor < peakStart) {
+                type = "offpeak";
+                segEnd = Math.min(peakStart, end);
+              } else if (cursor < peakEnd) {
+                type = "peak";
+                segEnd = Math.min(peakEnd, end);
+              } else {
+                type = "offpeak";
+                segEnd = Math.min(nextUtcMid, end);
+              }
+            }
+
+            raw.push({
+              type,
+              startMs: cursor - localMidnightTs,
+              endMs: segEnd - localMidnightTs,
+            });
+            cursor = segEnd;
+          }
+
+          // Merge adjacent segments of same type
+          const merged = [raw[0]];
+          for (let i = 1; i < raw.length; i++) {
+            const last = merged[merged.length - 1];
+            if (raw[i].type === last.type) {
+              last.endMs = raw[i].endMs;
+            } else {
+              merged.push(raw[i]);
+            }
+          }
+          return merged;
+        }
+
+        function buildWeeklyTimeline() {
+          const container = document.getElementById("wtDays");
+          container.innerHTML = "";
+          const now = new Date();
+          const nowTs = now.getTime();
+          const DAY_MS = 86400000;
+
+          // Time scale row — local 00:00–24:00
+          const scaleRow = document.createElement("div");
+          scaleRow.className = "wt-scale";
+          const scaleGutter = document.createElement("div");
+          scaleGutter.className = "wt-scale-gutter";
+          scaleRow.appendChild(scaleGutter);
+          const scaleTrack = document.createElement("div");
+          scaleTrack.className = "wt-scale-track";
+          for (const h of [0, 6, 12, 18, 24]) {
+            const tick = document.createElement("span");
+            tick.className = "wt-tick";
+            tick.style.left = (h / 24) * 100 + "%";
+            tick.textContent = String(h).padStart(2, "0") + ":00";
+            scaleTrack.appendChild(tick);
+          }
+          scaleRow.appendChild(scaleTrack);
+          container.appendChild(scaleRow);
+
+          // Find local Monday of this week
+          const localDay = now.getDay();
+          const daysFromMon = localDay === 0 ? 6 : localDay - 1;
+          const monLocal = new Date(
+            now.getFullYear(),
+            now.getMonth(),
+            now.getDate() - daysFromMon,
+          );
+          const dayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+
+          // Pre-compute segments for boundary days (day before first & day after last)
+          const allSegs = [];
+          for (let i = -1; i <= 7; i++) {
+            const d = new Date(
+              monLocal.getFullYear(),
+              monLocal.getMonth(),
+              monLocal.getDate() + i,
+            );
+            allSegs.push(getLocalDaySegments(d.getTime()));
+          }
+          // allSegs index: day i => allSegs[i + 1]
+
+          for (let i = 0; i < 7; i++) {
+            const dayLocal = new Date(
+              monLocal.getFullYear(),
+              monLocal.getMonth(),
+              monLocal.getDate() + i,
+            );
+            const dayStartTs = dayLocal.getTime();
+            const dayEndTs = dayStartTs + DAY_MS;
+            const isToday = nowTs >= dayStartTs && nowTs < dayEndTs;
+
+            const row = document.createElement("div");
+            row.className = "wt-row" + (isToday ? " is-today" : "");
+
+            const label = document.createElement("div");
+            label.className = "wt-day-label";
+            label.textContent = dayLabels[i];
+            row.appendChild(label);
+
+            const barWrap = document.createElement("div");
+            barWrap.className = "wt-bar-wrap";
+
+            const segments = allSegs[i + 1];
+            const prevSegs = allSegs[i];
+            const nextSegs = allSegs[i + 2];
+
+            for (const s of segments) {
+              const seg = document.createElement("div");
+              seg.className = `wt-seg wt-seg-${s.type}`;
+              seg.style.flex = (s.endMs - s.startMs).toString();
+
+              // Resolve true start/end for segments split at midnight
+              let trueStart = formatMsAsTime(s.startMs);
+              let trueEnd = formatMsAsTime(s.endMs);
+              if (s.startMs === 0 && s.endMs < DAY_MS && prevSegs.length > 0) {
+                const last = prevSegs[prevSegs.length - 1];
+                if (last.type === s.type && last.endMs === DAY_MS) {
+                  trueStart = formatMsAsTime(last.startMs);
+                }
+              }
+              if (s.endMs === DAY_MS && s.startMs > 0 && nextSegs.length > 0) {
+                const first = nextSegs[0];
+                if (first.type === s.type && first.startMs === 0) {
+                  trueEnd = formatMsAsTime(first.endMs);
+                }
+              }
+
+              seg.dataset.tooltip = `${s.type === "peak" ? "Peak" : "Off-peak"}: ${trueStart}–${trueEnd}`;
+              const segStartTs = dayStartTs + s.startMs;
+              const segEndTs = dayStartTs + s.endMs;
+              if (nowTs >= segEndTs) seg.classList.add("past");
+              else if (nowTs >= segStartTs && nowTs < segEndTs)
+                seg.classList.add("current");
+              barWrap.appendChild(seg);
+            }
+
+            // "Now" indicator
+            if (isToday) {
+              const pct = ((nowTs - dayStartTs) / DAY_MS) * 100;
+              const nowLine = document.createElement("div");
+              nowLine.className = "wt-now";
+              nowLine.style.left = pct + "%";
+              barWrap.appendChild(nowLine);
+            }
+
+            row.appendChild(barWrap);
+            container.appendChild(row);
           }
         }
 
-        seg.dataset.tooltip = `${s.type === 'peak' ? 'Peak' : 'Off-peak'}: ${trueStart}–${trueEnd}`;
-        const segStartTs = dayStartTs + s.startMs;
-        const segEndTs = dayStartTs + s.endMs;
-        if (nowTs >= segEndTs) seg.classList.add('past');
-        else if (nowTs >= segStartTs && nowTs < segEndTs) seg.classList.add('current');
-        barWrap.appendChild(seg);
-      }
+        // === Format ms offset within a day as HH:MM ===
+        function formatMsAsTime(ms) {
+          const h = Math.floor(ms / 3600000);
+          const m = Math.floor((ms % 3600000) / 60000);
+          return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
+        }
 
-      // "Now" indicator
-      if (isToday) {
-        const pct = ((nowTs - dayStartTs) / DAY_MS) * 100;
-        const nowLine = document.createElement('div');
-        nowLine.className = 'wt-now';
-        nowLine.style.left = pct + '%';
-        barWrap.appendChild(nowLine);
-      }
+        // === Notifications ===
+        const notifBtn = document.getElementById("notifToggle");
+        const notifBanner = document.getElementById("notifBanner");
+        const notifBannerBtn = document.getElementById("notifBannerBtn");
+        const notifBannerClose = document.getElementById("notifBannerClose");
+        let notifEnabled = localStorage.getItem("claude-promo-notif") === "on";
+        let notifDismissed =
+          localStorage.getItem("claude-promo-notif-dismissed") === "1";
+        let prevStatus = null;
 
-      row.appendChild(barWrap);
-      container.appendChild(row);
-    }
-  }
+        function updateNotifUI() {
+          notifBtn.innerHTML = notifEnabled
+            ? '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
+            : '<svg viewBox="0 0 24 24"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+          notifBtn.classList.toggle("active", notifEnabled);
+          notifBtn.title = notifEnabled
+            ? "Notifications on"
+            : "Notifications off";
+          // Show banner if notifications not enabled, not dismissed, and API available
+          const showBanner =
+            !notifEnabled &&
+            !notifDismissed &&
+            "Notification" in window &&
+            Notification.permission !== "denied";
+          notifBanner.style.display = showBanner ? "" : "none";
+        }
+        updateNotifUI();
 
-  // === Format ms offset within a day as HH:MM ===
-  function formatMsAsTime(ms) {
-    const h = Math.floor(ms / 3600000);
-    const m = Math.floor((ms % 3600000) / 60000);
-    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
-  }
+        async function enableNotifications() {
+          if (!("Notification" in window)) return false;
+          const perm =
+            Notification.permission === "granted"
+              ? "granted"
+              : await Notification.requestPermission();
+          if (perm !== "granted") return false;
+          notifEnabled = true;
+          localStorage.setItem("claude-promo-notif", "on");
+          updateNotifUI();
+          return true;
+        }
 
-  // === Notifications ===
-  const notifBtn = document.getElementById('notifToggle');
-  const notifBanner = document.getElementById('notifBanner');
-  const notifBannerBtn = document.getElementById('notifBannerBtn');
-  const notifBannerClose = document.getElementById('notifBannerClose');
-  let notifEnabled = localStorage.getItem('claude-promo-notif') === 'on';
-  let notifDismissed = localStorage.getItem('claude-promo-notif-dismissed') === '1';
-  let prevStatus = null;
+        function disableNotifications() {
+          notifEnabled = false;
+          localStorage.removeItem("claude-promo-notif");
+          updateNotifUI();
+        }
 
-  function updateNotifUI() {
-    notifBtn.innerHTML = notifEnabled
-      ? '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'
-      : '<svg viewBox="0 0 24 24"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
-    notifBtn.classList.toggle('active', notifEnabled);
-    notifBtn.title = notifEnabled ? 'Notifications on' : 'Notifications off';
-    // Show banner if notifications not enabled, not dismissed, and API available
-    const showBanner = !notifEnabled && !notifDismissed && 'Notification' in window && Notification.permission !== 'denied';
-    notifBanner.style.display = showBanner ? '' : 'none';
-  }
-  updateNotifUI();
+        notifBtn.addEventListener("click", async () => {
+          if (!notifEnabled) {
+            await enableNotifications();
+          } else {
+            disableNotifications();
+          }
+        });
 
-  async function enableNotifications() {
-    if (!('Notification' in window)) return false;
-    const perm = Notification.permission === 'granted'
-      ? 'granted'
-      : await Notification.requestPermission();
-    if (perm !== 'granted') return false;
-    notifEnabled = true;
-    localStorage.setItem('claude-promo-notif', 'on');
-    updateNotifUI();
-    return true;
-  }
+        notifBannerBtn.addEventListener("click", async () => {
+          if (await enableNotifications()) {
+            notifDismissed = true;
+            localStorage.setItem("claude-promo-notif-dismissed", "1");
+          }
+        });
 
-  function disableNotifications() {
-    notifEnabled = false;
-    localStorage.removeItem('claude-promo-notif');
-    updateNotifUI();
-  }
+        notifBannerClose.addEventListener("click", () => {
+          notifDismissed = true;
+          localStorage.setItem("claude-promo-notif-dismissed", "1");
+          updateNotifUI();
+        });
 
-  notifBtn.addEventListener('click', async () => {
-    if (!notifEnabled) {
-      await enableNotifications();
-    } else {
-      disableNotifications();
-    }
-  });
+        const NOTIF_MESSAGES = {
+          PEAK: {
+            title: "Peak Hours Started",
+            body: "Session limits are now active.",
+          },
+          OFF_PEAK: {
+            title: "Off-Peak Started",
+            body: "Enjoy unrestricted usage.",
+          },
+        };
 
-  notifBannerBtn.addEventListener('click', async () => {
-    if (await enableNotifications()) {
-      notifDismissed = true;
-      localStorage.setItem('claude-promo-notif-dismissed', '1');
-    }
-  });
+        function sendStatusNotification(status) {
+          if (!notifEnabled || Notification.permission !== "granted") return;
+          const msg = NOTIF_MESSAGES[status];
+          if (!msg) return;
+          new Notification(msg.title, { body: msg.body, icon: "favicon.svg" });
+        }
 
-  notifBannerClose.addEventListener('click', () => {
-    notifDismissed = true;
-    localStorage.setItem('claude-promo-notif-dismissed', '1');
-    updateNotifUI();
-  });
+        // === Main update ===
+        const answerEl = document.getElementById("answer");
+        const subtitleEl = document.getElementById("subtitle");
+        const countdownEl = document.getElementById("countdown");
+        const countdownLabelEl = document.getElementById("countdown-label");
+        const progressBar = document.getElementById("progressBar");
+        const tzInfoEl = document.getElementById("tzInfo");
 
-  const NOTIF_MESSAGES = {
-    PEAK:     { title: 'Peak Hours Started', body: 'Session limits are now active.' },
-    OFF_PEAK: { title: 'Off-Peak Started',   body: 'Enjoy unrestricted usage.' },
-  };
+        function update() {
+          const now = new Date();
+          const status = getPeakStatus(now);
 
-  function sendStatusNotification(status) {
-    if (!notifEnabled || Notification.permission !== 'granted') return;
-    const msg = NOTIF_MESSAGES[status];
-    if (!msg) return;
-    new Notification(msg.title, { body: msg.body, icon: 'favicon.svg' });
-  }
+          // Notify on status transition
+          if (prevStatus !== null && status !== prevStatus) {
+            sendStatusNotification(status);
+          }
+          prevStatus = status;
 
-  // === Main update ===
-  const answerEl = document.getElementById('answer');
-  const subtitleEl = document.getElementById('subtitle');
-  const countdownEl = document.getElementById('countdown');
-  const countdownLabelEl = document.getElementById('countdown-label');
-  const progressBar = document.getElementById('progressBar');
-  const tzInfoEl = document.getElementById('tzInfo');
+          // Timezone info
+          const tz = getTimezoneName();
+          const peakLocal = `${formatLocalTime(PEAK_START_UTC)}–${formatLocalTime(PEAK_END_UTC)}`;
+          tzInfoEl.textContent = `${tz} · peak hours ${peakLocal}`;
 
-  function update() {
-    const now = new Date();
-    const status = getPeakStatus(now);
+          // Answer
+          answerEl.className = "";
+          switch (status) {
+            case "PEAK":
+              answerEl.textContent = "PEAK";
+              answerEl.className = "yes";
+              subtitleEl.textContent = "Session limits apply";
+              break;
+            case "OFF_PEAK":
+              answerEl.textContent = "OFF-PEAK";
+              answerEl.className = "no";
+              subtitleEl.textContent = "Unrestricted usage";
+              break;
+          }
 
-    // Notify on status transition
-    if (prevStatus !== null && status !== prevStatus) {
-      sendStatusNotification(status);
-    }
-    prevStatus = status;
+          // Countdown
+          const transition = getNextTransition(now, status);
+          if (transition) {
+            const remaining = transition.time - now.getTime();
+            countdownEl.textContent = formatDuration(remaining);
+            countdownLabelEl.textContent = transition.label;
+          } else {
+            countdownEl.textContent = "";
+            countdownLabelEl.textContent = "";
+          }
 
-    // Timezone info
-    const tz = getTimezoneName();
-    const peakLocal = `${formatLocalTime(PEAK_START_UTC)}–${formatLocalTime(PEAK_END_UTC)}`;
-    tzInfoEl.textContent = `${tz} · peak hours ${peakLocal}`;
+          // Progress bar
+          const bounds = getSessionBounds(now, status);
+          if (bounds) {
+            const elapsed = now.getTime() - bounds.start;
+            const total = bounds.end - bounds.start;
+            const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
+            progressBar.style.width = pct + "%";
+            progressBar.style.background =
+              status === "PEAK" ? "var(--no-color)" : "var(--bar-fill)";
+          } else {
+            progressBar.style.width = "0%";
+          }
+        }
 
-    // Answer
-    answerEl.className = '';
-    switch (status) {
-      case 'PEAK':
-        answerEl.textContent = 'PEAK';
-        answerEl.className = 'yes';
-        subtitleEl.textContent = 'Session limits apply';
-        break;
-      case 'OFF_PEAK':
-        answerEl.textContent = 'OFF-PEAK';
-        answerEl.className = 'no';
-        subtitleEl.textContent = 'Unrestricted usage';
-        break;
-    }
+        // Tooltip
+        const tooltip = document.createElement("div");
+        tooltip.className = "wt-tooltip";
+        document.body.appendChild(tooltip);
 
-    // Countdown
-    const transition = getNextTransition(now, status);
-    if (transition) {
-      const remaining = transition.time - now.getTime();
-      countdownEl.textContent = formatDuration(remaining);
-      countdownLabelEl.textContent = transition.label;
-    } else {
-      countdownEl.textContent = '';
-      countdownLabelEl.textContent = '';
-    }
+        const wtContainer = document.getElementById("wtDays");
+        wtContainer.addEventListener(
+          "mouseenter",
+          (e) => {
+            const seg = e.target.closest(".wt-seg");
+            if (!seg || !seg.dataset.tooltip) return;
+            tooltip.textContent = seg.dataset.tooltip;
+            tooltip.classList.add("visible");
+          },
+          true,
+        );
+        wtContainer.addEventListener(
+          "mousemove",
+          (e) => {
+            tooltip.style.left = e.clientX + 10 + "px";
+            tooltip.style.top = e.clientY - 32 + "px";
+          },
+          true,
+        );
+        wtContainer.addEventListener(
+          "mouseleave",
+          (e) => {
+            const seg = e.target.closest(".wt-seg");
+            if (!seg) return;
+            tooltip.classList.remove("visible");
+          },
+          true,
+        );
 
-    // Progress bar
-    const bounds = getSessionBounds(now, status);
-    if (bounds) {
-      const elapsed = now.getTime() - bounds.start;
-      const total = bounds.end - bounds.start;
-      const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
-      progressBar.style.width = pct + '%';
-      progressBar.style.background = status === 'PEAK' ? 'var(--no-color)' : 'var(--bar-fill)';
-    } else {
-      progressBar.style.width = '0%';
-    }
-  }
+        // === Service status from status.claude.com ===
+        const STATUS_COMPONENTS = ["claude.ai", "Claude API", "Claude Code"];
+        const STATUS_LABELS = {
+          operational: "Operational",
+          degraded_performance: "Degraded",
+          partial_outage: "Partial outage",
+          major_outage: "Major outage",
+          under_maintenance: "Maintenance",
+        };
 
-  // Tooltip
-  const tooltip = document.createElement('div');
-  tooltip.className = 'wt-tooltip';
-  document.body.appendChild(tooltip);
+        async function fetchStatus() {
+          const card = document.getElementById("statusCard");
+          const container = document.getElementById("statusRows");
+          try {
+            const res = await fetch(
+              "https://status.claude.com/api/v2/summary.json",
+            );
+            if (!res.ok) throw new Error(res.status);
+            const data = await res.json();
 
-  const wtContainer = document.getElementById('wtDays');
-  wtContainer.addEventListener('mouseenter', e => {
-    const seg = e.target.closest('.wt-seg');
-    if (!seg || !seg.dataset.tooltip) return;
-    tooltip.textContent = seg.dataset.tooltip;
-    tooltip.classList.add('visible');
-  }, true);
-  wtContainer.addEventListener('mousemove', e => {
-    tooltip.style.left = (e.clientX + 10) + 'px';
-    tooltip.style.top = (e.clientY - 32) + 'px';
-  }, true);
-  wtContainer.addEventListener('mouseleave', e => {
-    const seg = e.target.closest('.wt-seg');
-    if (!seg) return;
-    tooltip.classList.remove('visible');
-  }, true);
+            const components = data.components.filter((c) =>
+              STATUS_COMPONENTS.some((name) => c.name.includes(name)),
+            );
 
-
-  // === Service status from status.claude.com ===
-  const STATUS_COMPONENTS = ['claude.ai', 'Claude API', 'Claude Code'];
-  const STATUS_LABELS = {
-    operational: 'Operational',
-    degraded_performance: 'Degraded',
-    partial_outage: 'Partial outage',
-    major_outage: 'Major outage',
-    under_maintenance: 'Maintenance'
-  };
-
-  async function fetchStatus() {
-    const card = document.getElementById('statusCard');
-    const container = document.getElementById('statusRows');
-    try {
-      const res = await fetch('https://status.claude.com/api/v2/summary.json');
-      if (!res.ok) throw new Error(res.status);
-      const data = await res.json();
-
-      const components = data.components.filter(c =>
-        STATUS_COMPONENTS.some(name => c.name.includes(name))
-      );
-
-      let html = '';
-      for (const comp of components) {
-        const label = STATUS_LABELS[comp.status] || comp.status;
-        // Use short display name
-        const displayName = STATUS_COMPONENTS.find(n => comp.name.includes(n)) || comp.name;
-        html += `<div class="status-row">
+            let html = "";
+            for (const comp of components) {
+              const label = STATUS_LABELS[comp.status] || comp.status;
+              // Use short display name
+              const displayName =
+                STATUS_COMPONENTS.find((n) => comp.name.includes(n)) ||
+                comp.name;
+              html += `<div class="status-row">
           <span class="status-dot ${comp.status}"></span>
           <span class="status-name">${displayName}</span>
           <span class="status-label">${label}</span>
         </div>`;
-      }
+            }
 
-      // Active incidents
-      const incidents = (data.incidents || []).filter(inc => inc.status !== 'resolved');
-      for (const inc of incidents.slice(0, 2)) {
-        html += `<div class="status-incident">${inc.name}</div>`;
-      }
+            // Active incidents
+            const incidents = (data.incidents || []).filter(
+              (inc) => inc.status !== "resolved",
+            );
+            for (const inc of incidents.slice(0, 2)) {
+              html += `<div class="status-incident">${inc.name}</div>`;
+            }
 
-      container.innerHTML = html;
-      card.style.display = '';
-    } catch {
-      card.style.display = 'none';
-    }
-  }
+            container.innerHTML = html;
+            card.style.display = "";
+          } catch {
+            card.style.display = "none";
+          }
+        }
 
-  // Init
-  buildWeeklyTimeline();
-  update();
-  fetchStatus();
-  setInterval(() => { update(); buildWeeklyTimeline(); }, 1000);
-  // Refresh service status every 5 minutes
-  setInterval(fetchStatus, 300000);
-})();
-</script>
-</body>
+        // Init
+        buildWeeklyTimeline();
+        update();
+        fetchStatus();
+        setInterval(() => {
+          update();
+          buildWeeklyTimeline();
+        }, 1000);
+        // Refresh service status every 5 minutes
+        setInterval(fetchStatus, 300000);
+      })();
+    </script>
+    <!-- EthicalAds スクリプト (後で有効化)
+    <script
+      async
+      src="https://media.ethicalads.io/media/client/ethicalads.min.js"
+    ></script>
+    -->
+  </body>
 </html>

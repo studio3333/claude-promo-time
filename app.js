@@ -509,7 +509,11 @@
     const nowDayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
     const { start: dispS, end: dispE } = peakUTCForDay(nowDayStart);
     const peakLocal = `${formatLocalTime(dispS)}–${formatLocalTime(dispE)}`;
-    tzInfoEl.textContent = `${tz} · peak hours ${peakLocal}`;
+    const ptLabel = getPTUTCOffset(now) === 7 ? "PDT" : "PST";
+    const hm = h => String(h).padStart(2, "0") + ":00";
+    const ptTime = `${hm(PT_PEAK_START)}–${hm(PT_PEAK_END)} ${ptLabel}`;
+    const gmtTime = `${hm(dispS)}–${hm(dispE)} GMT`;
+    tzInfoEl.textContent = `${tz} · peak hours ${peakLocal} · ${ptTime} · ${gmtTime}`;
 
     // Answer
     answerEl.className = "";

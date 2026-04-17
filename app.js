@@ -1,9 +1,30 @@
 (() => {
-  // === Peak hours config (UTC) ===
-  // Mon–Fri 13:00–19:00 UTC = 1–7 PM GMT = 5–11 AM PST = 6 AM–noon PDT
-  const PEAK_START_UTC = 13;
-  const PEAK_END_UTC = 19;
+  // === Peak hours config ===
+  // Canonical: Mon–Fri 5AM–11AM PT (America/Los_Angeles)
+  // UTC equivalent varies: 13:00–19:00 UTC in PST, 12:00–18:00 UTC in PDT
+  const PT_PEAK_START = 5;
+  const PT_PEAK_END = 11;
   const DAY_MS = 86400000;
+
+  function getPTUTCOffset(date) {
+    const ptHour = parseInt(
+      new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Los_Angeles",
+        hour: "numeric",
+        hour12: false,
+      }).format(date),
+      10
+    );
+    let offset = date.getUTCHours() - ptHour;
+    if (offset < 0) offset += 24;
+    if (offset > 12) offset -= 24;
+    return offset; // 8 = PST, 7 = PDT
+  }
+
+  function peakUTCForDay(utcDayStartMs) {
+    const offset = getPTUTCOffset(new Date(utcDayStartMs + 12 * 3600000));
+    return { start: PT_PEAK_START + offset, end: PT_PEAK_END + offset };
+  }
 
   // === Theme ===
   const themeBtn = document.getElementById("themeToggle");
@@ -60,19 +81,13 @@
         ),
       );
       if (c.getUTCDay() >= 1 && c.getUTCDay() <= 5) {
-        return Date.UTC(
-          c.getUTCFullYear(),
-          c.getUTCMonth(),
-          c.getUTCDate(),
-          PEAK_START_UTC,
-          0,
-          0,
-        );
+        const dayStart = Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate());
+        return dayStart + peakUTCForDay(dayStart).start * 3600000;
       }
     }
   }
 
-  // Returns the PEAK_END_UTC timestamp of the most recent weekday strictly before fromDate.
+  // Returns the PT_PEAK_END timestamp of the most recent weekday strictly before fromDate.
   function prevWeekdayPeakEnd(fromDate) {
     for (let behind = 1; behind <= 7; behind++) {
       const c = new Date(
@@ -83,14 +98,8 @@
         ),
       );
       if (c.getUTCDay() >= 1 && c.getUTCDay() <= 5) {
-        return Date.UTC(
-          c.getUTCFullYear(),
-          c.getUTCMonth(),
-          c.getUTCDate(),
-          PEAK_END_UTC,
-          0,
-          0,
-        );
+        const dayStart = Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate());
+        return dayStart + peakUTCForDay(dayStart).end * 3600000;
       }
     }
   }
@@ -99,12 +108,10 @@
   function getPeakStatus(now) {
     const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
     const utcHour = now.getUTCHours();
-    if (
-      utcDay >= 1 &&
-      utcDay <= 5 &&
-      utcHour >= PEAK_START_UTC &&
-      utcHour < PEAK_END_UTC
-    )
+    const { start, end } = peakUTCForDay(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+    );
+    if (utcDay >= 1 && utcDay <= 5 && utcHour >= start && utcHour < end)
       return "PEAK";
     return "OFF_PEAK";
   }
@@ -112,16 +119,11 @@
   // === Next transition time ===
   function getNextTransition(now, status) {
     const d = new Date(now);
+    const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    const { start, end } = peakUTCForDay(dayStart);
     if (status === "PEAK") {
       return {
-        time: Date.UTC(
-          d.getUTCFullYear(),
-          d.getUTCMonth(),
-          d.getUTCDate(),
-          PEAK_END_UTC,
-          0,
-          0,
-        ),
+        time: dayStart + end * 3600000,
         label: "Off-peak in",
       };
     }
@@ -129,11 +131,9 @@
     const utcDay = d.getUTCDay();
     const utcHour = d.getUTCHours();
     const fromDay =
-      utcDay >= 1 && utcDay <= 5 && utcHour < PEAK_START_UTC
+      utcDay >= 1 && utcDay <= 5 && utcHour < start
         ? d
-        : new Date(
-            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1),
-          );
+        : new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
     return { time: nextWeekdayPeakStart(fromDay), label: "Peak starts in" };
   }
 
@@ -147,24 +147,27 @@
       utcHour = d.getUTCHours();
     const nextDay = new Date(Date.UTC(yy, mo, dd + 1));
 
+    const todayStart = Date.UTC(yy, mo, dd);
+    const { start: peakS, end: peakE } = peakUTCForDay(todayStart);
+
     if (status === "PEAK") {
       return {
-        start: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0),
-        end: Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0),
+        start: todayStart + peakS * 3600000,
+        end: todayStart + peakE * 3600000,
       };
     }
 
     if (utcDay >= 1 && utcDay <= 5) {
-      if (utcHour < PEAK_START_UTC) {
+      if (utcHour < peakS) {
         // Before today's peak: last weekday's peak end → today's peak start
         return {
           start: prevWeekdayPeakEnd(d),
-          end: Date.UTC(yy, mo, dd, PEAK_START_UTC, 0, 0),
+          end: todayStart + peakS * 3600000,
         };
       } else {
         // After today's peak: today's peak end → next weekday's peak start
         return {
-          start: Date.UTC(yy, mo, dd, PEAK_END_UTC, 0, 0),
+          start: todayStart + peakE * 3600000,
           end: nextWeekdayPeakStart(nextDay),
         };
       }
@@ -236,8 +239,9 @@
           d.getUTCMonth(),
           d.getUTCDate(),
         );
-        const peakStart = utcDayStart + PEAK_START_UTC * 3600000;
-        const peakEnd = utcDayStart + PEAK_END_UTC * 3600000;
+        const { start: ps, end: pe } = peakUTCForDay(utcDayStart);
+        const peakStart = utcDayStart + ps * 3600000;
+        const peakEnd = utcDayStart + pe * 3600000;
         const nextUtcMid = utcDayStart + DAY_MS;
 
         if (cursor < peakStart) {
@@ -502,7 +506,9 @@
 
     // Timezone info
     const tz = getTimezoneName();
-    const peakLocal = `${formatLocalTime(PEAK_START_UTC)}–${formatLocalTime(PEAK_END_UTC)}`;
+    const nowDayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const { start: dispS, end: dispE } = peakUTCForDay(nowDayStart);
+    const peakLocal = `${formatLocalTime(dispS)}–${formatLocalTime(dispE)}`;
     tzInfoEl.textContent = `${tz} · peak hours ${peakLocal}`;
 
     // Answer

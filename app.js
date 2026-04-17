@@ -513,7 +513,7 @@
     const hm = h => String(h).padStart(2, "0") + ":00";
     const ptTime = `${hm(PT_PEAK_START)}–${hm(PT_PEAK_END)} ${ptLabel}`;
     const gmtTime = `${hm(dispS)}–${hm(dispE)} GMT`;
-    tzInfoEl.textContent = `${tz} · peak hours ${peakLocal} · ${ptTime} · ${gmtTime}`;
+    tzInfoEl.innerHTML = `${tz} · peak hours ${peakLocal}<br>${ptTime} · ${gmtTime}`;
 
     // Answer
     answerEl.className = "";

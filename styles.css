@@ -126,16 +126,16 @@ h1 {
   letter-spacing: 0.18em;
   color: var(--text);
   opacity: 0.55;
-  margin-bottom: 2rem;
+  margin-bottom: 3rem;
   text-transform: uppercase;
 }
 
 #answer {
-  font-size: clamp(2.8rem, 10vw, 8rem);
+  font-size: clamp(3.5rem, 13vw, 10rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   transition:
     color 0.4s,
     text-shadow 0.4s;
@@ -164,16 +164,16 @@ h1 {
 }
 
 #subtitle {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 400;
   letter-spacing: 0.01em;
   color: var(--text-dim);
-  margin-bottom: 1.8rem;
+  margin-bottom: 2.2rem;
 }
 
 #countdown {
   font-family: var(--font-mono);
-  font-size: clamp(1.5rem, 5vw, 2.2rem);
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
   font-weight: 200;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
@@ -181,22 +181,22 @@ h1 {
   color: var(--text);
 }
 #countdown-label {
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 500;
   color: var(--text-dim);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.8rem;
 }
 
 /* Session progress (thin bar) */
 .progress-wrap {
-  width: 100%;
+  width: 80%;
   height: 5px;
   background: var(--bar-bg);
   border-radius: 3px;
   overflow: hidden;
-  margin-bottom: 2rem;
+  margin: 0 auto 2.5rem;
 }
 .progress-bar {
   height: 100%;
@@ -216,7 +216,7 @@ h1 {
   letter-spacing: 0.14em;
   color: var(--text-dim);
   margin-bottom: 0.6rem;
-  text-align: left;
+  text-align: center;
 }
 .wt-days {
   display: flex;

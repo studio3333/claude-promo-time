@@ -13,7 +13,7 @@
         hour: "numeric",
         hour12: false,
       }).format(date),
-      10
+      10,
     );
     let offset = date.getUTCHours() - ptHour;
     if (offset < 0) offset += 24;
@@ -24,6 +24,35 @@
   function peakUTCForDay(utcDayStartMs) {
     const offset = getPTUTCOffset(new Date(utcDayStartMs + 12 * 3600000));
     return { start: PT_PEAK_START + offset, end: PT_PEAK_END + offset };
+  }
+
+  // === Answer font themes ===
+  const ANSWER_FONT_THEMES = [
+    { category: 'classic', family: '"Playfair Display", Georgia, serif', weight: 900, tracking: '0em',     url: 'Playfair+Display:wght@900' },
+    { category: 'classic', family: '"Lora", Georgia, serif',             weight: 700, tracking: '0.01em',  url: 'Lora:wght@700' },
+    { category: 'modern',  family: '"Space Grotesk", sans-serif',        weight: 700, tracking: '-0.02em', url: 'Space+Grotesk:wght@700' },
+    { category: 'modern',  family: '"Outfit", sans-serif',               weight: 800, tracking: '-0.02em', url: 'Outfit:wght@800' },
+    { category: 'quirky',  family: '"Bebas Neue", sans-serif',           weight: 400, tracking: '0.08em',  url: 'Bebas+Neue' },
+    { category: 'quirky',  family: '"Space Mono", monospace',            weight: 700, tracking: '-0.01em', url: 'Space+Mono:wght@700' },
+    { category: 'quirky',  family: '"Silkscreen", monospace',            weight: 700, tracking: '0.02em',  url: 'Silkscreen:wght@700' },
+  ];
+
+  function applyAnswerFontTheme() {
+    const lastIdx = parseInt(localStorage.getItem('claude-peak-font-idx') ?? '-1', 10);
+    const candidates = ANSWER_FONT_THEMES.map((_, i) => i).filter(i => i !== lastIdx);
+    const idx = candidates[Math.floor(Math.random() * candidates.length)];
+    localStorage.setItem('claude-peak-font-idx', String(idx));
+    const theme = ANSWER_FONT_THEMES[idx];
+
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = `https://fonts.googleapis.com/css2?family=${theme.url}&display=swap`;
+    document.head.appendChild(link);
+
+    const el = document.getElementById('answer');
+    el.style.fontFamily = theme.family;
+    el.style.fontWeight = theme.weight;
+    el.style.letterSpacing = theme.tracking;
   }
 
   // === Theme ===
@@ -81,7 +110,11 @@
         ),
       );
       if (c.getUTCDay() >= 1 && c.getUTCDay() <= 5) {
-        const dayStart = Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate());
+        const dayStart = Date.UTC(
+          c.getUTCFullYear(),
+          c.getUTCMonth(),
+          c.getUTCDate(),
+        );
         return dayStart + peakUTCForDay(dayStart).start * 3600000;
       }
     }
@@ -98,7 +131,11 @@
         ),
       );
       if (c.getUTCDay() >= 1 && c.getUTCDay() <= 5) {
-        const dayStart = Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate());
+        const dayStart = Date.UTC(
+          c.getUTCFullYear(),
+          c.getUTCMonth(),
+          c.getUTCDate(),
+        );
         return dayStart + peakUTCForDay(dayStart).end * 3600000;
       }
     }
@@ -109,7 +146,7 @@
     const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
     const utcHour = now.getUTCHours();
     const { start, end } = peakUTCForDay(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
     if (utcDay >= 1 && utcDay <= 5 && utcHour >= start && utcHour < end)
       return "PEAK";
@@ -119,7 +156,11 @@
   // === Next transition time ===
   function getNextTransition(now, status) {
     const d = new Date(now);
-    const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    const dayStart = Date.UTC(
+      d.getUTCFullYear(),
+      d.getUTCMonth(),
+      d.getUTCDate(),
+    );
     const { start, end } = peakUTCForDay(dayStart);
     if (status === "PEAK") {
       return {
@@ -133,7 +174,9 @@
     const fromDay =
       utcDay >= 1 && utcDay <= 5 && utcHour < start
         ? d
-        : new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1));
+        : new Date(
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1),
+          );
     return { time: nextWeekdayPeakStart(fromDay), label: "Peak starts in" };
   }
 
@@ -506,11 +549,15 @@
 
     // Timezone info
     const tz = getTimezoneName();
-    const nowDayStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const nowDayStart = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+    );
     const { start: dispS, end: dispE } = peakUTCForDay(nowDayStart);
     const peakLocal = `${formatLocalTime(dispS)}–${formatLocalTime(dispE)}`;
     const ptLabel = getPTUTCOffset(now) === 7 ? "PDT" : "PST";
-    const hm = h => String(h).padStart(2, "0") + ":00";
+    const hm = (h) => String(h).padStart(2, "0") + ":00";
     const ptTime = `${hm(PT_PEAK_START)}–${hm(PT_PEAK_END)} ${ptLabel}`;
     const gmtTime = `${hm(dispS)}–${hm(dispE)} GMT`;
     tzInfoEl.innerHTML = `${tz} · peak hours ${peakLocal}<br>${ptTime} · ${gmtTime}`;
@@ -603,9 +650,7 @@
     const card = document.getElementById("statusCard");
     const container = document.getElementById("statusRows");
     try {
-      const res = await fetch(
-        "https://status.claude.com/api/v2/summary.json",
-      );
+      const res = await fetch("https://status.claude.com/api/v2/summary.json");
       if (!res.ok) throw new Error(res.status);
       const data = await res.json();
 
@@ -641,6 +686,7 @@
   }
 
   // Init
+  applyAnswerFontTheme();
   buildWeeklyTimeline();
   update();
   fetchStatus();

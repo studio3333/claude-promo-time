@@ -27,24 +27,34 @@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap" rel="stylesheet" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@100..800&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body data-theme="dark">
-    <button
-      class="top-btn notif-toggle"
-      id="notifToggle"
-      aria-label="Toggle notifications"
-      title="Notifications off"
-    ></button>
-    <button
-      class="top-btn theme-toggle"
-      id="themeToggle"
-      aria-label="Toggle theme"
-    ></button>
-
     <main>
       <h1>Claude Peak Hours</h1>
+      <div class="top-btns">
+        <button
+          class="top-btn share-btn"
+          id="shareBtn"
+          aria-label="Share"
+          title="Share"
+        ></button>
+        <button
+          class="top-btn notif-toggle"
+          id="notifToggle"
+          aria-label="Toggle notifications"
+          title="Notifications off"
+        ></button>
+        <button
+          class="top-btn theme-toggle"
+          id="themeToggle"
+          aria-label="Toggle theme"
+        ></button>
+      </div>
 
       <div id="answer"></div>
       <div id="subtitle"></div>
@@ -135,7 +145,14 @@
         </p>
         <p style="margin-top: 0.3rem">Not affiliated with Anthropic</p>
         <p style="margin-top: 0.3rem">© studio3333</p>
-        <p style="margin-top: 0.3rem"><a href="https://studio3333.github.io/tokushoho/" target="_blank" rel="noopener">特定商取引法に基づく表記</a></p>
+        <p style="margin-top: 0.3rem">
+          <a
+            href="https://studio3333.github.io/tokushoho/"
+            target="_blank"
+            rel="noopener"
+            >特定商取引法に基づく表記</a
+          >
+        </p>
       </footer>
     </main>
 

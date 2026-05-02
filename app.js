@@ -454,6 +454,7 @@
   let notifDismissed =
     localStorage.getItem("claude-promo-notif-dismissed") === "1";
   let prevStatus = null;
+  let currentStatus = 'OFF_PEAK';
 
   function updateNotifUI() {
     notifBtn.innerHTML = notifEnabled
@@ -540,6 +541,7 @@
   function update() {
     const now = new Date();
     const status = getPeakStatus(now);
+    currentStatus = status;
 
     // Notify on status transition
     if (prevStatus !== null && status !== prevStatus) {
@@ -684,6 +686,65 @@
       card.style.display = "none";
     }
   }
+
+  // === Share ===
+  const shareBtn = document.getElementById('shareBtn');
+  const SHARE_SVG = '<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>';
+  shareBtn.innerHTML = SHARE_SVG;
+
+  const sharePopover = document.createElement('div');
+  sharePopover.className = 'share-popover';
+  sharePopover.innerHTML =
+    '<button class="share-popover-item" id="shareCopyBtn">' +
+      '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>' +
+      'Copy link' +
+    '</button>' +
+    '<button class="share-popover-item x-btn" id="shareXBtn">' +
+      '<svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.738l7.726-8.82L1.254 2.25H8.08l4.213 5.57 5.95-5.57zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>' +
+      'Post on X' +
+    '</button>';
+  document.body.appendChild(sharePopover);
+
+  function getShareText() {
+    const isPeak = currentStatus === 'PEAK';
+    return 'Claude is currently ' + (isPeak ? 'PEAK 🔴' : 'OFF-PEAK 🟢') + ' ' + location.href + ' #Claude';
+  }
+
+  function openSharePopover() {
+    const rect = shareBtn.getBoundingClientRect();
+    sharePopover.style.top = (rect.bottom + 6) + 'px';
+    sharePopover.style.right = (window.innerWidth - rect.right) + 'px';
+    sharePopover.classList.add('open');
+    shareBtn.classList.add('active');
+  }
+
+  function closeSharePopover() {
+    sharePopover.classList.remove('open');
+    shareBtn.classList.remove('active');
+  }
+
+  shareBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sharePopover.classList.contains('open') ? closeSharePopover() : openSharePopover();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!sharePopover.contains(e.target)) closeSharePopover();
+  });
+
+  document.getElementById('shareCopyBtn').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(location.href);
+    const btn = document.getElementById('shareCopyBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('copied'); closeSharePopover(); }, 1500);
+  });
+
+  document.getElementById('shareXBtn').addEventListener('click', () => {
+    window.open('https://twitter.com/intent/tweet?text=' + encodeURIComponent(getShareText()), '_blank', 'noopener');
+    closeSharePopover();
+  });
 
   // Init
   applyAnswerFontTheme();
